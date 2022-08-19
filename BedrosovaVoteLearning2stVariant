@@ -41,9 +41,7 @@ contract vote is Context, Ownable{
     uint votesCount;
     uint private valueVoter;
     uint amountOwner;
-    struct Candidate{
-        uint value;      
-    }
+   
     mapping (uint=>Ballot) public ballots;
     struct   Ballot  {
         uint startAt;
