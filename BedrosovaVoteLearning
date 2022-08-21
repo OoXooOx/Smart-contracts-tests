@@ -42,13 +42,13 @@ contract vote is Context, Ownable{
     uint private valueVoter;
     uint amountOwner;
 
-    mapping (uint=>Ballot) public ballots;
+    mapping(uint=>Ballot) public ballots;
     struct   Ballot  {
         uint startAt;
         uint endsAt;
         bool withrawWinnerPrise;
         address [] _candAddr;
-        mapping (address=>uint) candidates;
+        mapping(address=>uint) candidates;
     } 
     
     error ValueNotEven();
