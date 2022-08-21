@@ -1,0 +1,137 @@
+// SPDX-License-Identifier: GPL-3.0 
+pragma solidity 0.8.16;
+
+abstract contract Context {
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
+    }
+}
+
+abstract contract Ownable is Context {
+    address private _owner;
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    constructor() {
+        _transferOwnership(_msgSender());
+    }
+    modifier onlyOwner() {
+        _checkOwner();
+        _;
+    }
+    function owner() public view virtual returns (address) {
+        return _owner;
+    }
+    function _checkOwner() internal view virtual {
+        require(owner() == _msgSender(), "Ownable: caller is not the owner");
+    }
+    function transferOwnership(address newOwner) public virtual onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        _transferOwnership(newOwner);
+    }
+    function _transferOwnership(address newOwner) internal virtual {
+        address oldOwner = _owner;
+        _owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
+    }
+}
+
+contract vote is Context, Ownable{
+
+    uint constant duration = 3 days;
+    uint constant FEE = 10; // 10%
+    uint votesCount;
+    uint private valueVoter;
+    uint amountOwner;
+
+    mapping (uint=>Ballot) public ballots;
+    struct   Ballot  {
+        uint startAt;
+        uint endsAt;
+        bool withrawWinnerPrise;
+        address [] _candAddr;
+        mapping (address=>uint) candidates;
+    } 
+    
+    error ValueNotEven();
+   
+    function addBallot (address [] memory _Candidates) public onlyOwner {   
+        votesCount++;
+        ballots[votesCount].startAt = block.timestamp;
+        ballots[votesCount].endsAt = block.timestamp+duration;
+        ballots[votesCount].withrawWinnerPrise = false;
+        for (uint i = 0; i < _Candidates.length; i++){
+            if ( _Candidates[i]== address(0) 
+            || _Candidates[i]== address(this)) {
+                revert ("Wrong address!");
+            }
+            _addCandidates(_Candidates[i]);
+        }
+    }
+
+    function _addCandidates (address _Candidate) internal  {            
+        for (uint i = 0; i < ballots[votesCount]._candAddr.length; i++){
+            if (_Candidate==ballots[votesCount]._candAddr[i]){
+                revert ("Candidate's address cannot repeat");
+            }
+        }
+        ballots[votesCount]._candAddr.push(_Candidate);
+        ballots[votesCount].candidates[_Candidate]=0;
+    }
+
+    function getBallotCandidates (uint _voteNumber) public view returns(address[] memory arr ){
+        arr = ballots[_voteNumber]._candAddr;
+    }
+
+    function makeVote (uint _voteNumber, address _candidateAddr) public payable {
+        require (block.timestamp<ballots[votesCount].endsAt, "Ballot over!");
+        for (uint i = 0; i < ballots[_voteNumber]._candAddr.length; i ++){
+            if (_candidateAddr != ballots[_voteNumber]._candAddr[i]) {
+            revert ("this candidate does not take part in the voting");
+            }
+        }
+        valueVoter = msg.value / 2;
+        if ((2 * valueVoter) != msg.value) revert ValueNotEven();
+        ballots[_voteNumber].candidates[_candidateAddr] = msg.value;        
+    }
+
+    function getBalance () public view returns (uint ) {
+        return address(this).balance;
+    }
+
+    function getWinner (uint _voteNumber) public view returns(address) {
+        require(block.timestamp>ballots[_voteNumber].endsAt, "Ballot not end!");  
+        uint winnerValue;
+        uint winnerAddrNumberInArray;
+        for (uint i = 0; i <ballots[_voteNumber]._candAddr.length; i++) {
+            uint _amount = ballots[_voteNumber].candidates[ballots[_voteNumber]._candAddr[i]];
+            if (_amount>winnerValue){
+                winnerValue=_amount;
+                winnerAddrNumberInArray=i;
+                }
+        }
+        return ballots[_voteNumber]._candAddr[winnerAddrNumberInArray]; 
+    }
+
+    function getBallotValue (uint _voteNumber) internal  view returns (uint) {
+        uint ballotAmount;
+        for (uint i = 0; i <ballots[_voteNumber]._candAddr.length; i++) {
+            ballotAmount+=ballots[_voteNumber].candidates[ballots[_voteNumber]._candAddr[i]]; 
+        }
+        return ballotAmount;
+    }
+
+    function withdrawWinner (uint _voteNumber) external {
+        require(block.timestamp>ballots[_voteNumber].endsAt, "Ballot not end!"); 
+        require(_msgSender()==getWinner(_voteNumber),"You are not a winner!");
+        require (!ballots[_voteNumber].withrawWinnerPrise, "Prise already received!");
+        ballots[_voteNumber].withrawWinnerPrise = true;
+        uint ownerAmount = getBallotValue(_voteNumber)/100*FEE;
+        amountOwner +=ownerAmount;
+        payable(_msgSender()).transfer(getBallotValue(_voteNumber)-ownerAmount);
+    }
+
+    function withdraw () external onlyOwner {
+        uint _amount = amountOwner;
+        amountOwner-=_amount;
+        payable (_msgSender()).transfer(_amount);
+    }
+}
