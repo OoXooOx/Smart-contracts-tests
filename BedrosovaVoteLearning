@@ -46,9 +46,13 @@ contract vote is Context, Ownable{
     struct   Ballot  {
         uint startAt;
         uint endsAt;
+        uint ballotValue;
         bool withrawWinnerPrise;
+        address winner;
+        uint winnerValue;
         address [] _candAddr;
         mapping(address=>uint) candidates;
+        mapping(address=>bool) isCandidate;
     } 
     
     error ValueNotEven();
@@ -68,13 +72,15 @@ contract vote is Context, Ownable{
     }
 
     function _addCandidates (address _Candidate) internal  {            
-        for (uint i = 0; i < ballots[votesCount]._candAddr.length; i++){
-            if (_Candidate==ballots[votesCount]._candAddr[i]){
-                revert ("Candidate's address cannot repeat");
-            }
-        }
+        require(!ballots[votesCount].isCandidate[_Candidate],"Candidate's address cannot repeat");
+        // for (uint i = 0; i < ballots[votesCount]._candAddr.length; i++){
+        //     if (_Candidate==ballots[votesCount]._candAddr[i]){
+        //         revert ("Candidate's address cannot repeat");
+        //     }
+        // }
         ballots[votesCount]._candAddr.push(_Candidate);
         ballots[votesCount].candidates[_Candidate]=0;
+        ballots[votesCount].isCandidate[_Candidate]=true;
     }
 
     function getBallotCandidates (uint _voteNumber) public view returns(address[] memory arr ){
@@ -82,15 +88,25 @@ contract vote is Context, Ownable{
     }
 
     function makeVote (uint _voteNumber, address _candidateAddr) public payable {
-        require (block.timestamp<ballots[votesCount].endsAt, "Ballot over!");
-        for (uint i = 0; i < ballots[_voteNumber]._candAddr.length; i ++){
-            if (_candidateAddr == ballots[_voteNumber]._candAddr[i]) {
-                valueVoter = msg.value / 2;
-                if ((2 * valueVoter) != msg.value) revert ValueNotEven();
-                ballots[_voteNumber].candidates[_candidateAddr] = msg.value;
-            }
-        }
-        revert ("this candidate does not take part in the voting")         
+        require (block.timestamp<ballots[_voteNumber].endsAt, "Ballot over!");
+        // for (uint i = 0; i < ballots[_voteNumber]._candAddr.length; i ++){
+        //     if (_candidateAddr == ballots[_voteNumber]._candAddr[i]) {
+        //         valueVoter = msg.value / 2;
+        //         if ((2 * valueVoter) != msg.value) revert ValueNotEven();
+        //         ballots[_voteNumber].candidates[_candidateAddr] = msg.value;
+        //     }
+        // }
+        // revert ("this candidate does not take part in the voting");
+        require(ballots[_voteNumber].isCandidate[_candidateAddr],
+        "this candidate does not take part in the voting");
+        valueVoter = msg.value / 2;
+        if ((2 * valueVoter) != msg.value) revert ValueNotEven();
+        ballots[_voteNumber].candidates[_candidateAddr] += msg.value;
+        ballots[_voteNumber].ballotValue += msg.value;
+        if (ballots[_voteNumber].candidates[_candidateAddr]>ballots[_voteNumber].winnerValue){
+            ballots[_voteNumber].winner=_candidateAddr;
+            ballots[_voteNumber].candidates[_candidateAddr]=ballots[_voteNumber].winnerValue;
+            } 
     }
 
     function getBalance () public view returns (uint ) {
@@ -99,24 +115,25 @@ contract vote is Context, Ownable{
 
     function getWinner (uint _voteNumber) public view returns(address) {
         require(block.timestamp>ballots[_voteNumber].endsAt, "Ballot not end!");  
-        uint winnerValue;
-        uint winnerAddrNumberInArray;
-        for (uint i = 0; i <ballots[_voteNumber]._candAddr.length; i++) {
-            uint _amount = ballots[_voteNumber].candidates[ballots[_voteNumber]._candAddr[i]];
-            if (_amount>winnerValue){
-                winnerValue=_amount;
-                winnerAddrNumberInArray=i;
-                }
-        }
-        return ballots[_voteNumber]._candAddr[winnerAddrNumberInArray]; 
+        // uint winnerValue;
+        // uint winnerAddrNumberInArray;
+        // for (uint i = 0; i <ballots[_voteNumber]._candAddr.length; i++) {
+        //     uint _amount = ballots[_voteNumber].candidates[ballots[_voteNumber]._candAddr[i]];
+        //     if (_amount>winnerValue){
+        //         winnerValue=_amount;
+        //         winnerAddrNumberInArray=i;
+        //         }
+        // }
+        // return ballots[_voteNumber]._candAddr[winnerAddrNumberInArray]; 
+        return ballots[_voteNumber].winner;
     }
 
     function getBallotValue (uint _voteNumber) internal  view returns (uint) {
-        uint ballotAmount;
-        for (uint i = 0; i <ballots[_voteNumber]._candAddr.length; i++) {
-            ballotAmount+=ballots[_voteNumber].candidates[ballots[_voteNumber]._candAddr[i]]; 
-        }
-        return ballotAmount;
+        // uint ballotAmount;
+        // for (uint i = 0; i <ballots[_voteNumber]._candAddr.length; i++) {
+        //     ballotAmount+=ballots[_voteNumber].candidates[ballots[_voteNumber]._candAddr[i]]; 
+        // }
+        return ballots[_voteNumber].ballotValue;
     }
 
     function withdrawWinner (uint _voteNumber) external {
