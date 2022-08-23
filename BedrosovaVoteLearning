@@ -105,7 +105,7 @@ contract vote is Context, Ownable{
         ballots[_voteNumber].ballotValue += msg.value;
         if (ballots[_voteNumber].candidates[_candidateAddr]>ballots[_voteNumber].winnerValue){
             ballots[_voteNumber].winner=_candidateAddr;
-            ballots[_voteNumber].candidates[_candidateAddr]=ballots[_voteNumber].winnerValue;
+            ballots[_voteNumber].winnerValue=ballots[_voteNumber].candidates[_candidateAddr];
             } 
     }
 
