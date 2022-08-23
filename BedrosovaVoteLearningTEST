@@ -1,0 +1,388 @@
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
+
+
+
+describe ("ballotBedrosova", function(){
+    let owner
+    let candidate1
+    let candidate2
+    let candidate3
+    let candidate4
+    let voter1
+    let voter2
+    let voter3 
+    let ballot
+    const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+    async function getTimestamp(bn){
+        return(await ethers.provider.getBlock(bn)).timestamp
+    }
+
+    beforeEach (async function (){
+        [owner, candidate1, candidate2, candidate4, candidate3, voter1, voter2, voter3] = await ethers.getSigners()
+        const BallotContract = await ethers.getContractFactory("vote", owner)
+        ballot = await BallotContract.deploy()
+        await ballot.deployed()
+    })
+    
+    it("sets owner", async function (){
+        const _owner = await ballot.owner()
+        console.log(_owner)
+        expect(_owner).to.eq(owner.address)
+    })
+
+    it("should allow add candidates", async function (){ 
+        const duration = 259200
+        await expect(ballot.connect(voter1).addBallot(
+            [candidate1.address,candidate2.address,candidate3.address]) 
+        ).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(ballot.connect(owner).addBallot(
+            [candidate1.address,candidate2.address,ballot.address]) 
+        ).to.be.revertedWith('Wrong address!');
+        await expect(ballot.connect(owner).addBallot(
+            [candidate1.address,candidate2.address,ZERO_ADDRESS]) 
+        ).to.be.revertedWith('Wrong address!');
+        await expect(ballot.connect(owner).addBallot(
+            [candidate1.address,candidate2.address,candidate2.address, candidate3.address]) 
+        ).to.be.revertedWith("Candidate's address cannot repeat");
+        const tx = await ballot.connect(owner).addBallot(
+            [candidate1.address,candidate2.address,candidate3.address]);
+        await tx.wait();
+        const candidates = await ballot.connect(owner).getBallotCandidates(1);
+        console.log(candidates);
+        expect(candidates).to.include.ordered.members([candidate1.address,candidate2.address,candidate3.address]);
+        const cBallot = await ballot.ballots(1)
+        console.log(cBallot);
+        const ts = await getTimestamp(tx.blocknumber)
+        expect(cBallot.endsAt).to.eq(ts+duration)
+        expect(cBallot.startAt).to.eq(ts)
+        expect(cBallot.withrawWinnerPrise).to.be.false  
+        expect(cBallot.ballotValue).to.eq(0)
+        expect(cBallot.winner).to.eq(ZERO_ADDRESS)
+        expect(cBallot.winnerValue).to.eq(0)
+    })
+
+    it("should allow makevote and send money", async function (){
+        const duration = 259201
+        const tx = await ballot.connect(owner).addBallot(
+            [candidate1.address, candidate2.address, candidate3.address]);
+        await tx.wait();
+        const ts = await getTimestamp(tx.blocknumber)
+        const sum = 100;
+        const sum1 = 101;
+        await expect(ballot.connect(voter2).makeVote(1, candidate4.address, {value: sum}))
+        .to.be.revertedWith("this candidate does not take part in the voting");
+        await expect(ballot.connect(voter2).makeVote(1, candidate3.address, {value: sum1}))
+        .to.be.revertedWithCustomError(
+            ballot,
+            "ValueNotEven"
+          );
+        await expect (await ballot.connect(voter2).makeVote(1, candidate3.address, {value: sum}))
+        .to.changeEtherBalances([voter2, ballot], [-sum, sum])
+        const cBallot = await ballot.ballots(1)
+        console.log(cBallot);
+        expect(cBallot.ballotValue).to.eq(sum)
+        expect(cBallot.winner).to.eq(candidate3.address)
+        expect(cBallot.winnerValue).to.eq(sum)
+        await expect (await ballot.connect(voter3).makeVote(1, candidate2.address, {value: 3*sum}))
+        .to.changeEtherBalances([voter3, ballot], [3*(-sum), 3*sum])
+        const pBallot = await ballot.ballots(1)
+        console.log(pBallot);
+        expect(pBallot.ballotValue).to.eq(4*sum)
+        expect(pBallot.winner).to.eq(candidate2.address)
+        expect(pBallot.winnerValue).to.eq(3*sum)
+        await expect (await ballot.connect(voter1).makeVote(1, candidate1.address, {value: 2*sum}))
+        .to.changeEtherBalances([voter1, ballot], [2*(-sum), 2*sum])
+        const lBallot = await ballot.ballots(1)
+        console.log(lBallot);
+        expect(lBallot.ballotValue).to.eq(6*sum)
+        expect(lBallot.winner).to.eq(candidate2.address)
+        expect(lBallot.winnerValue).to.eq(3*sum)
+        await network.provider.send("evm_increaseTime", [duration]);
+        await network.provider.send("evm_mine");
+        await expect (ballot.connect(voter2).makeVote(1, candidate3.address, {value: sum}))
+        .to.be.revertedWith('Ballot over!')
+    })
+
+    it("should allow get winner and ballot value", async function (){
+        const duration = 259201
+        const tx = await ballot.connect(owner).addBallot(
+            [candidate1.address, candidate2.address, candidate3.address]);
+        await tx.wait();
+        const ts = await getTimestamp(tx.blocknumber)
+        const sum = 100;
+        const sum1 = 101;
+        await expect(ballot.connect(voter2).makeVote(1, candidate4.address, {value: sum}))
+        .to.be.revertedWith("this candidate does not take part in the voting");
+        await expect(ballot.connect(voter2).makeVote(1, candidate3.address, {value: sum1}))
+        .to.be.revertedWithCustomError(
+            ballot,
+            "ValueNotEven"
+          );
+        await expect (await ballot.connect(voter2).makeVote(1, candidate3.address, {value: sum}))
+        .to.changeEtherBalances([voter2, ballot], [-sum, sum])
+        const cBallot = await ballot.ballots(1)
+        console.log(cBallot);
+        expect(cBallot.ballotValue).to.eq(sum)
+        expect(cBallot.winner).to.eq(candidate3.address)
+        expect(cBallot.winnerValue).to.eq(sum)
+        await expect (await ballot.connect(voter3).makeVote(1, candidate2.address, {value: 3*sum}))
+        .to.changeEtherBalances([voter3, ballot], [3*(-sum), 3*sum])
+        const pBallot = await ballot.ballots(1)
+        console.log(pBallot);
+        expect(pBallot.ballotValue).to.eq(4*sum)
+        expect(pBallot.winner).to.eq(candidate2.address)
+        expect(pBallot.winnerValue).to.eq(3*sum)
+        await expect (await ballot.connect(voter1).makeVote(1, candidate1.address, {value: 2*sum}))
+        .to.changeEtherBalances([voter1, ballot], [2*(-sum), 2*sum])
+        const lBallot = await ballot.ballots(1)
+        console.log(lBallot);
+        expect(lBallot.ballotValue).to.eq(6*sum)
+        expect(lBallot.winner).to.eq(candidate2.address)
+        expect(lBallot.winnerValue).to.eq(3*sum)
+
+        await expect(ballot.connect(voter2).getWinner(1))
+        .to.be.revertedWith("Ballot not end!");
+        await network.provider.send("evm_increaseTime", [duration]);
+        await network.provider.send("evm_mine");
+        expect(await ballot.connect(voter2).getWinner(1))
+        .to.eq(candidate2.address)
+        expect(await ballot.connect(voter2).getBallotValue(1))
+        .to.eq(6*sum)
+    })
+
+    it("should allow withdraw winner prise", async function (){
+        const duration = 259201
+        const tx = await ballot.connect(owner).addBallot(
+            [candidate1.address, candidate2.address, candidate3.address]);
+        await tx.wait();
+        const ts = await getTimestamp(tx.blocknumber)
+        const sum = 100;
+        const sum1 = 101;
+        await expect(ballot.connect(voter2).makeVote(1, candidate4.address, {value: sum}))
+        .to.be.revertedWith("this candidate does not take part in the voting");
+        await expect(ballot.connect(voter2).makeVote(1, candidate3.address, {value: sum1}))
+        .to.be.revertedWithCustomError(
+            ballot,
+            "ValueNotEven"
+          );
+        await expect (await ballot.connect(voter2).makeVote(1, candidate3.address, {value: sum}))
+        .to.changeEtherBalances([voter2, ballot], [-sum, sum])
+        const cBallot = await ballot.ballots(1)
+        console.log(cBallot);
+        expect(cBallot.ballotValue).to.eq(sum)
+        expect(cBallot.winner).to.eq(candidate3.address)
+        expect(cBallot.winnerValue).to.eq(sum)
+        await expect (await ballot.connect(voter3).makeVote(1, candidate2.address, {value: 3*sum}))
+        .to.changeEtherBalances([voter3, ballot], [3*(-sum), 3*sum])
+        const pBallot = await ballot.ballots(1)
+        console.log(pBallot);
+        expect(pBallot.ballotValue).to.eq(4*sum)
+        expect(pBallot.winner).to.eq(candidate2.address)
+        expect(pBallot.winnerValue).to.eq(3*sum)
+        await expect (await ballot.connect(voter1).makeVote(1, candidate1.address, {value: 2*sum}))
+        .to.changeEtherBalances([voter1, ballot], [2*(-sum), 2*sum])
+        const lBallot = await ballot.ballots(1)
+        console.log(lBallot);
+        expect(lBallot.ballotValue).to.eq(6*sum)
+        expect(lBallot.winner).to.eq(candidate2.address)
+        expect(lBallot.winnerValue).to.eq(3*sum)
+
+        await expect(ballot.connect(candidate2).withdrawWinner(1))
+        .to.be.revertedWith("Ballot not end!");
+
+        await expect(ballot.connect(voter2).getWinner(1))
+        .to.be.revertedWith("Ballot not end!");
+        await network.provider.send("evm_increaseTime", [duration]);
+        await network.provider.send("evm_mine");
+        expect(await ballot.connect(voter2).getWinner(1))
+        .to.eq(candidate2.address)
+        expect(await ballot.connect(voter2).getBallotValue(1))
+        .to.eq(6*sum)
+ 
+        await expect(ballot.connect(voter2).withdrawWinner(1))
+        .to.be.revertedWith("You are not a winner!");
+        
+        const winnerValue = 6*sum
+        const fee = 10
+        const ownerValue = winnerValue/100*fee
+        const winnerPay = winnerValue-ownerValue
+        await expect (await ballot.connect(candidate2).withdrawWinner(1))
+        .to.changeEtherBalances([candidate2, ballot], [winnerPay,-winnerPay])
+        await expect (ballot.connect(candidate2).withdrawWinner(1))
+        .to.be.revertedWith("Prise already received!");
+    })
+
+    it("should allow withdraw winner prise", async function (){
+        const duration = 259201
+        const tx = await ballot.connect(owner).addBallot(
+            [candidate1.address, candidate2.address, candidate3.address]);
+        await tx.wait();
+        const ts = await getTimestamp(tx.blocknumber)
+        const sum = 100;
+        const sum1 = 101;
+        await expect(ballot.connect(voter2).makeVote(1, candidate4.address, {value: sum}))
+        .to.be.revertedWith("this candidate does not take part in the voting");
+        await expect(ballot.connect(voter2).makeVote(1, candidate3.address, {value: sum1}))
+        .to.be.revertedWithCustomError(
+            ballot,
+            "ValueNotEven"
+          );
+        await expect (await ballot.connect(voter2).makeVote(1, candidate3.address, {value: sum}))
+        .to.changeEtherBalances([voter2, ballot], [-sum, sum])
+        const cBallot = await ballot.ballots(1)
+        console.log(cBallot);
+        expect(cBallot.ballotValue).to.eq(sum)
+        expect(cBallot.winner).to.eq(candidate3.address)
+        expect(cBallot.winnerValue).to.eq(sum)
+        await expect (await ballot.connect(voter3).makeVote(1, candidate2.address, {value: 3*sum}))
+        .to.changeEtherBalances([voter3, ballot], [3*(-sum), 3*sum])
+        const pBallot = await ballot.ballots(1)
+        console.log(pBallot);
+        expect(pBallot.ballotValue).to.eq(4*sum)
+        expect(pBallot.winner).to.eq(candidate2.address)
+        expect(pBallot.winnerValue).to.eq(3*sum)
+        await expect (await ballot.connect(voter1).makeVote(1, candidate1.address, {value: 2*sum}))
+        .to.changeEtherBalances([voter1, ballot], [2*(-sum), 2*sum])
+        const lBallot = await ballot.ballots(1)
+        console.log(lBallot);
+        expect(lBallot.ballotValue).to.eq(6*sum)
+        expect(lBallot.winner).to.eq(candidate2.address)
+        expect(lBallot.winnerValue).to.eq(3*sum)
+
+        await expect(ballot.connect(candidate2).withdrawWinner(1))
+        .to.be.revertedWith("Ballot not end!");
+        await expect(ballot.connect(candidate2).withdraw())
+        .to.be.revertedWith("Ownable: caller is not the owner");
+        
+        await expect(await ballot.connect(owner).withdraw())
+        .to.changeEtherBalances([owner, ballot], [0,0])
+
+
+        await expect(ballot.connect(voter2).getWinner(1))
+        .to.be.revertedWith("Ballot not end!");
+        await network.provider.send("evm_increaseTime", [duration]);
+        await network.provider.send("evm_mine");
+        expect(await ballot.connect(voter2).getWinner(1))
+        .to.eq(candidate2.address)
+        expect(await ballot.connect(voter2).getBallotValue(1))
+        .to.eq(6*sum)
+ 
+        await expect(ballot.connect(voter2).withdrawWinner(1))
+        .to.be.revertedWith("You are not a winner!");
+        
+        const winnerValue = 6*sum
+        const fee = 10
+        const ownerValue = winnerValue/100*fee
+        const winnerPay = winnerValue-ownerValue
+        await expect (await ballot.connect(candidate2).withdrawWinner(1))
+        .to.changeEtherBalances([candidate2, ballot], [winnerPay,-winnerPay])
+        await expect (ballot.connect(candidate2).withdrawWinner(1))
+        .to.be.revertedWith("Prise already received!");
+
+        await expect(await ballot.connect(owner).withdraw())
+        .to.changeEtherBalances([owner, ballot], [ownerValue,-ownerValue])
+    })
+
+    it("should allow withdraw winner prise", async function (){
+        const duration = 259201
+        const tx = await ballot.connect(owner).addBallot(
+            [candidate1.address, candidate2.address, candidate3.address]);
+        await tx.wait();
+        const ts = await getTimestamp(tx.blocknumber)
+        const sum = 100;
+        const sum1 = 101;
+        await expect(ballot.connect(voter2).makeVote(1, candidate4.address, {value: sum}))
+        .to.be.revertedWith("this candidate does not take part in the voting");
+        await expect(ballot.connect(voter2).makeVote(1, candidate3.address, {value: sum1}))
+        .to.be.revertedWithCustomError(
+            ballot,
+            "ValueNotEven"
+          );
+        await expect (await ballot.connect(voter2).makeVote(1, candidate3.address, {value: sum}))
+        .to.changeEtherBalances([voter2, ballot], [-sum, sum])
+        const cBallot = await ballot.ballots(1)
+        console.log(cBallot);
+        expect(cBallot.ballotValue).to.eq(sum)
+        expect(cBallot.winner).to.eq(candidate3.address)
+        expect(cBallot.winnerValue).to.eq(sum)
+        await expect (await ballot.connect(voter3).makeVote(1, candidate2.address, {value: 3*sum}))
+        .to.changeEtherBalances([voter3, ballot], [3*(-sum), 3*sum])
+        const pBallot = await ballot.ballots(1)
+        console.log(pBallot);
+        expect(pBallot.ballotValue).to.eq(4*sum)
+        expect(pBallot.winner).to.eq(candidate2.address)
+        expect(pBallot.winnerValue).to.eq(3*sum)
+        await expect (await ballot.connect(voter1).makeVote(1, candidate1.address, {value: 2*sum}))
+        .to.changeEtherBalances([voter1, ballot], [2*(-sum), 2*sum])
+        const lBallot = await ballot.ballots(1)
+        console.log(lBallot);
+        expect(lBallot.ballotValue).to.eq(6*sum)
+        expect(lBallot.winner).to.eq(candidate2.address)
+        expect(lBallot.winnerValue).to.eq(3*sum)
+        await network.provider.send("evm_increaseTime", [1000]);
+        await network.provider.send("evm_mine");
+
+
+        const tc = await ballot.connect(owner).addBallot(
+        [candidate1.address, candidate2.address, candidate3.address, candidate4.address]);
+        await tc.wait();
+        const tt = await getTimestamp(tc.blocknumber)
+        const wBallot = await ballot.ballots(2)
+        console.log(wBallot);
+        expect(wBallot.endsAt).to.eq(tt+duration-1)
+        expect(wBallot.startAt).to.eq(tt)
+        expect(wBallot.withrawWinnerPrise).to.be.false  
+        expect(wBallot.ballotValue).to.eq(0)
+        expect(wBallot.winner).to.eq(ZERO_ADDRESS)
+        expect(wBallot.winnerValue).to.eq(0)
+        await expect (await ballot.connect(voter3).makeVote(2, candidate3.address, {value: 2*sum}))
+        .to.changeEtherBalances([voter3, ballot], [-(2*sum), 2*sum])
+        const oBallot = await ballot.ballots(2)
+        console.log(oBallot);
+        expect(oBallot.withrawWinnerPrise).to.be.false  
+        expect(oBallot.ballotValue).to.eq(2*sum)
+        expect(oBallot.winner).to.eq(candidate3.address)
+        expect(oBallot.winnerValue).to.eq(2*sum)
+
+
+        await expect(ballot.connect(candidate2).withdrawWinner(1))
+        .to.be.revertedWith("Ballot not end!");
+        await expect(ballot.connect(candidate2).withdraw())
+        .to.be.revertedWith("Ownable: caller is not the owner");
+        
+        await expect(await ballot.connect(owner).withdraw())
+        .to.changeEtherBalances([owner, ballot], [0,0])
+
+
+        await expect(ballot.connect(voter2).getWinner(1))
+        .to.be.revertedWith("Ballot not end!");
+        await network.provider.send("evm_increaseTime", [duration]);
+        await network.provider.send("evm_mine");
+        expect(await ballot.connect(voter2).getWinner(1))
+        .to.eq(candidate2.address)
+        expect(await ballot.connect(voter2).getBallotValue(1))
+        .to.eq(6*sum)
+ 
+        await expect(ballot.connect(voter2).withdrawWinner(1))
+        .to.be.revertedWith("You are not a winner!");
+        
+        const winnerValue = 6*sum
+        const fee = 10
+        const ownerValue = winnerValue/100*fee
+        const winnerPay = winnerValue-ownerValue
+        await expect (await ballot.connect(candidate2).withdrawWinner(1))
+        .to.changeEtherBalances([candidate2, ballot], [winnerPay,-winnerPay])
+        await expect (ballot.connect(candidate2).withdrawWinner(1))
+        .to.be.revertedWith("Prise already received!");
+        
+        await expect(await ballot.connect(owner).withdraw())
+        .to.changeEtherBalances([owner, ballot], [ownerValue,-ownerValue])
+
+
+    })
+
+
+
+})
