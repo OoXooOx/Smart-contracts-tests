@@ -137,7 +137,6 @@ contract vote is Context, Ownable{
     }
 
     function withdrawWinner (uint _voteNumber) external {
-        require(block.timestamp>ballots[_voteNumber].endsAt, "Ballot not end!"); 
         require(_msgSender()==getWinner(_voteNumber),"You are not a winner!");
         require (!ballots[_voteNumber].withrawWinnerPrise, "Prise already received!");
         ballots[_voteNumber].withrawWinnerPrise = true;
