@@ -84,13 +84,13 @@ contract vote is Context, Ownable{
     function makeVote (uint _voteNumber, address _candidateAddr) public payable {
         require (block.timestamp<ballots[votesCount].endsAt, "Ballot over!");
         for (uint i = 0; i < ballots[_voteNumber]._candAddr.length; i ++){
-            if (_candidateAddr != ballots[_voteNumber]._candAddr[i]) {
-            revert ("this candidate does not take part in the voting");
+            if (_candidateAddr == ballots[_voteNumber]._candAddr[i]) {
+                valueVoter = msg.value / 2;
+                if ((2 * valueVoter) != msg.value) revert ValueNotEven();
+                ballots[_voteNumber].candidates[_candidateAddr] = msg.value;
             }
         }
-        valueVoter = msg.value / 2;
-        if ((2 * valueVoter) != msg.value) revert ValueNotEven();
-        ballots[_voteNumber].candidates[_candidateAddr] = msg.value;        
+        revert ("this candidate does not take part in the voting")         
     }
 
     function getBalance () public view returns (uint ) {
