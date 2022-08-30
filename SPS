@@ -139,12 +139,12 @@ function startGameSPS (uint _amount, uint _choice) external onlyEvenValue(_amoun
 
 function abort (uint _countSPS) external  {
     require(block.timestamp>SPS[_countSPS].endsAt, "Wait until game ends!");
-    require (_msgSender()==SPS[countSPS].first, "Not you start game!");
-    require (SPS[countSPS].second==address(0) || block.timestamp>SPS[countSPS].endsAt+1 days, 
+    require (_msgSender()==SPS[_countSPS].first, "Not you start game!");
+    require (SPS[_countSPS].second==address(0) || block.timestamp>SPS[_countSPS].endsAt+1 days, 
     "Wait for second player or 1 day!");
     require(!SPS[_countSPS].withrawPriseStopped, "Prise received or stopped!");
     SPS[_countSPS].withrawPriseStopped=true;
-    balances[_msgSender()]+=SPS[countSPS].bidValue;
+    balances[_msgSender()]+=SPS[_countSPS].bidValue;
     emit gameEnd(_countSPS, SPS[_countSPS].winner);
     } 
 
@@ -248,6 +248,3 @@ function unpause() public onlyOwner {
     _unpause();
     }
 }
-
-
-
