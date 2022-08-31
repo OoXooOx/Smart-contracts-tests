@@ -34,52 +34,12 @@ abstract contract Ownable is Context {
     }
 }
 
-abstract contract Pausable is Context {
-    event Paused(address account);
-    event Unpaused(address account);
-    bool private _paused;
-    constructor() {
-        _paused = false;
-    }
-    modifier whenNotPaused() {
-        _requireNotPaused();
-        _;
-    }
-    modifier whenPaused() {
-        _requirePaused();
-        _;
-    }
-    function paused() public view virtual returns (bool) {
-        return _paused;
-    }
-    function _requireNotPaused() internal view virtual {
-        require(!paused(), "Pausable: paused");
-    }
-    function _requirePaused() internal view virtual {
-        require(paused(), "Pausable: not paused");
-    }
-    function _pause() internal virtual whenNotPaused {
-        _paused = true;
-        emit Paused(_msgSender());
-    }
-    function _unpause() internal virtual whenPaused {
-        _paused = false;
-        emit Unpaused(_msgSender());
-    }
-}
-
-
-
-
-
-contract game is Context, Ownable, Pausable {
+contract game is Context, Ownable {
     uint public FEE=10;
     uint private valueGamer;
-    uint playersMAXSPS=2;
-    uint playersMINSPS=2;
     uint maxChoiceNumberSPS = 2;
     uint durationSPS = 600;
-    uint countSPS;
+    uint count;
     uint public withdrawFunds;
 
     mapping (address=>uint) balances;
@@ -108,143 +68,114 @@ contract game is Context, Ownable, Pausable {
             _;
         }
 
-    event gameStart (
-        uint indexed gameNumber,
-        uint indexed startsAt,
-        uint indexed endsAt,
-        uint gameValue);
-
+    event gameStart (uint indexed gameNumber,uint indexed startsAt,uint indexed endsAt,uint gameValue);
     event gameEnd (uint indexed gameNumber, address indexed winner);
-    event SomeoneMakeBid (uint indexed gameNumber);
+    event SomeoneMakeBid (uint indexed numberGame);
 
-    function startGameSPS (uint _amount, bytes32 _hashedChoice) external onlyEvenValue(_amount) whenNotPaused() {
+    function startGameSPS (uint _amount, bytes32 _hashedChoice) external onlyEvenValue(_amount) {
         require(_amount<= _getBalanceAcc() && _amount!=0 ,"Not enough funds!");
         balances[_msgSender()]-=_amount;
-        countSPS++;
-        SPS[countSPS].first=_msgSender();
-        SPS[countSPS].firtstHashedChoice=_hashedChoice;
-        SPS[countSPS].startsAt = block.timestamp;
-        SPS[countSPS].endsAt = block.timestamp+durationSPS;
-        SPS[countSPS].playersCount++;
-        SPS[countSPS].bidValue=_amount/2;
-        emit gameStart (countSPS, SPS[countSPS].startsAt, SPS[countSPS].endsAt, SPS[countSPS].bidValue);
+        count++;
+        SPS[count].first=_msgSender();
+        SPS[count].firtstHashedChoice=_hashedChoice;
+        SPS[count].startsAt = block.timestamp;
+        SPS[count].endsAt = block.timestamp+durationSPS;
+        SPS[count].playersCount++;
+        SPS[count].bidValue=_amount/2;
+        emit gameStart (count, SPS[count].startsAt, SPS[count].endsAt, SPS[count].bidValue);
         }
 
-    function abort (uint _countSPS) external  {
-        require(block.timestamp>SPS[_countSPS].endsAt, "Wait until game ends!");
-        require (_msgSender()==SPS[_countSPS].first
-        || _msgSender()==SPS[_countSPS].second, "You not player!");
-        if (_msgSender()==SPS[_countSPS].first) {
-            require (SPS[_countSPS].second==address(0), 
-            "Wait for second player!");
-            require(!SPS[_countSPS].withrawPriseStopped, "Prise received or stopped!");
-            SPS[_countSPS].withrawPriseStopped=true;
-            balances[_msgSender()]+=SPS[_countSPS].bidValue*2;
-            emit gameEnd(_countSPS, SPS[_countSPS].winner);
+    function abort (uint _count) external  {
+        require(block.timestamp>SPS[_count].endsAt, "Wait until game ends!");
+        require (_msgSender()==SPS[_count].first
+        || _msgSender()==SPS[_count].second, "You not player!");
+        if (_msgSender()==SPS[_count].first) {
+            require (SPS[_count].second==address(0), 
+            "You must reveal choice!");
+            require(!SPS[_count].withrawPriseStopped, "Prise received or stopped!");
+            SPS[_count].withrawPriseStopped=true;
+            balances[_msgSender()]+=SPS[_count].bidValue*2;
+            emit gameEnd(_count, SPS[_count].winner);
             }
-        if (_msgSender()==SPS[_countSPS].second) {
-            require (block.timestamp>SPS[_countSPS].endsAt+3 hours,
+        if (_msgSender()==SPS[_count].second) {
+            require (block.timestamp>SPS[_count].endsAt+3 hours,
             "Wait for reveal choice 3 hours!");
-            require(!SPS[_countSPS].withrawPriseStopped, "Prise received or stopped!");
-            SPS[_countSPS].withrawPriseStopped=true;
-            balances[_msgSender()]+=SPS[_countSPS].bidValue;
-            emit gameEnd(_countSPS, SPS[_countSPS].winner);
+            require(!SPS[_count].withrawPriseStopped, "Prise received or stopped!");
+            SPS[_count].withrawPriseStopped=true;
+            balances[_msgSender()]+=SPS[_count].bidValue;
+            emit gameEnd(_count, SPS[_count].winner);
             }    
         } 
 
-    function makeChoiceSPS (uint _countSPS, uint _amount, uint _choice)
-    external onlyEvenValue(_amount)  {
-        require(!SPS[_countSPS].withrawPriseStopped, "Prise received or stopped!");
+    function makeChoiceSPS (uint _count, uint _amount, uint _choice)
+    external {
+        require(!SPS[_count].withrawPriseStopped, "Prise received or stopped!");
         require(_amount<=_getBalanceAcc(),"Not enough funds!");
         require(_choice<=maxChoiceNumberSPS, "Wrong choice number!");
-        require(SPS[_countSPS].playersCount<=playersMAXSPS,"Max players already!");
-        require(block.timestamp<SPS[_countSPS].endsAt, "Game over!");
-        require(_amount==SPS[_countSPS].bidValue, "Wrong bid value!");
-        require (SPS[_countSPS].second==address(0), "Someone already play!");
+        require(block.timestamp<SPS[_count].endsAt, "Game over!");
+        require(_amount==SPS[_count].bidValue, "Wrong bid value!");
+        require (SPS[_count].second==address(0), "Someone already play!");
         balances[_msgSender()]-=_amount;
-        SPS[_countSPS].second=_msgSender();
-        SPS[_countSPS].secondChoice=_choice;
-        SPS[_countSPS].playersCount++;
-        emit SomeoneMakeBid (_countSPS);
+        SPS[_count].second=_msgSender();
+        SPS[_count].secondChoice=_choice;
+        SPS[_count].playersCount++;
+        emit SomeoneMakeBid (_count);
         }
-
-
     
-    function revealChoice (uint _countSPS, uint _choice, string calldata _secret) external {
-        require(!SPS[_countSPS].withrawPriseStopped, "Prise received or stopped!");
-        require(SPS[_countSPS].second!=address(0), "Missing opponent!");
+    function revealChoice (uint _count, uint _choice, string calldata _secret) external {
+        require(!SPS[_count].withrawPriseStopped, "Prise received or stopped!");
+        require(SPS[_count].second!=address(0), "Missing opponent!");
         require(_choice<=maxChoiceNumberSPS, "Wrong choice number!");
         bytes32 commit=keccak256(abi.encode(_choice, _secret, _msgSender()));
-        require(commit==SPS[_countSPS].firtstHashedChoice, "You can't change choice!");
-        SPS[_countSPS].withrawPriseStopped=true;
-        SPS[_countSPS].firstChoice=_choice;
-        if (SPS[_countSPS].firstChoice==SPS[_countSPS].secondChoice) {
-            balances[_msgSender()]+=SPS[_countSPS].bidValue*2;
-            balances[SPS[countSPS].first]+=SPS[_countSPS].bidValue;
-
-            emit gameEnd(_countSPS, SPS[_countSPS].winner);
+        require(commit==SPS[_count].firtstHashedChoice, "You can't change choice!");
+        SPS[_count].withrawPriseStopped=true;
+        SPS[_count].firstChoice=_choice;
+        if (SPS[_count].firstChoice==SPS[_count].secondChoice) {
+            balances[_msgSender()]+=SPS[_count].bidValue*2;
+            balances[SPS[count].second]+=SPS[_count].bidValue;
+            emit gameEnd(_count, SPS[_count].winner);
         }
-        if (SPS[_countSPS].firstChoice==0
-        && SPS[_countSPS].secondChoice==1 
-        || SPS[_countSPS].firstChoice==1
-        && SPS[_countSPS].secondChoice==2
-        || SPS[_countSPS].firstChoice==2
-        && SPS[_countSPS].secondChoice==0
+        if (SPS[_count].firstChoice==0
+        && SPS[_count].secondChoice==1 
+        || SPS[_count].firstChoice==1
+        && SPS[_count].secondChoice==2
+        || SPS[_count].firstChoice==2
+        && SPS[_count].secondChoice==0
         ){
-            SPS[_countSPS].winner=SPS[_countSPS].first;
-            uint ownerAmount=SPS[_countSPS].bidValue*2/100*FEE;
-            balances[SPS[_countSPS].winner]+=SPS[_countSPS].bidValue*3-ownerAmount;
+            SPS[_count].winner=SPS[_count].first;
+            uint ownerAmount=SPS[_count].bidValue*2/100*FEE;
+            balances[SPS[_count].winner]+=SPS[_count].bidValue*3-ownerAmount;
             withdrawFunds+=ownerAmount;
-            emit gameEnd(_countSPS, SPS[_countSPS].winner);
+            emit gameEnd(_count, SPS[_count].winner);
             }
-        if (SPS[_countSPS].firstChoice==1
-        && SPS[_countSPS].secondChoice==0
-        || SPS[_countSPS].firstChoice==0
-        && SPS[_countSPS].secondChoice==2
-        || SPS[_countSPS].firstChoice==2
-        && SPS[_countSPS].secondChoice==1
+        if (SPS[_count].firstChoice==1
+        && SPS[_count].secondChoice==0
+        || SPS[_count].firstChoice==0
+        && SPS[_count].secondChoice==2
+        || SPS[_count].firstChoice==2
+        && SPS[_count].secondChoice==1
         ){
-            SPS[_countSPS].winner=SPS[_countSPS].second;
-            uint ownerAmount=SPS[_countSPS].bidValue*2/100*FEE;
-            balances[SPS[_countSPS].winner]+=SPS[_countSPS].bidValue*2-ownerAmount;
-            balances[SPS[_countSPS].first]+=SPS[_countSPS].bidValue;
+            SPS[_count].winner=SPS[_count].second;
+            uint ownerAmount=SPS[_count].bidValue*2/100*FEE;
+            balances[SPS[_count].winner]+=SPS[_count].bidValue*3-ownerAmount;
             withdrawFunds+=ownerAmount;
-            emit gameEnd(_countSPS, SPS[_countSPS].winner);
+            emit gameEnd(_count, SPS[_count].winner);
             }
         } 
 
-    function ttt (uint _choice, string calldata _secret) external view returns (bytes32){
-            bytes32 commit=keccak256(abi.encode(_choice, _secret, _msgSender()));
-            return commit;
-        }
-
-    function getWinner (uint _countSPS) public view returns(address) {
-        return SPS[_countSPS].winner;
+    function getWinner (uint _count) public view returns(address) {
+        return SPS[_count].winner;
         }
         
     function getBalance () public view returns (uint) {
         return address(this).balance;
         }
 
-    function setParamSPS (
-        uint _playersMAXSPS,
-        uint  _playersMINSPS,
-        uint _maxChoiceNumberSPS,
-        uint  _durationSPS
-        ) public onlyOwner whenPaused(){
-        require(block.timestamp>SPS[countSPS].endsAt,
-        "We have active games!");
-        playersMAXSPS=_playersMAXSPS;
-        playersMINSPS=_playersMINSPS;
-        maxChoiceNumberSPS=_maxChoiceNumberSPS;
-        durationSPS=_durationSPS;
-        }
-
     function _getBalanceAcc () public view returns(uint){
         return balances[_msgSender()];
         }
 
-    function wihdrawBalance () external whenNotPaused() {
+    function wihdrawBalance () external {
         uint amount =  balances[_msgSender()];
         balances[_msgSender()] -= amount;
         payable(_msgSender()).transfer(amount);
@@ -260,15 +191,4 @@ contract game is Context, Ownable, Pausable {
         balances[_msgSender()] += msg.value;
         }
 
-    function addBalanceToken (uint _amount) external onlyEvenValue(_amount) {
-        balances[_msgSender()] += _amount;
-        }
-
-    function pause() public onlyOwner {
-        _pause();
-        }
-
-    function unpause() public onlyOwner {
-        _unpause();
-        }
 }
