@@ -1,0 +1,327 @@
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
+
+describe ("SPS", function(){
+    let owner
+    let player1
+    let player2
+    let otherGuy
+    
+    const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+    async function getTimestamp(bn){
+        return(await ethers.provider.getBlock(bn)).timestamp
+    }
+
+    beforeEach (async function (){
+        [owner, player1, player2, otherGuy] = await ethers.getSigners()
+        const SPSContract = await ethers.getContractFactory("game", owner)
+        sps = await SPSContract.deploy()
+        await sps.deployed()
+    })
+
+    it("sets owner", async function (){
+        const _owner = await sps.owner()
+        console.log(_owner)
+        console.log(player1.address)
+        console.log(player2.address)
+        expect(_owner).to.eq(owner.address)
+    })
+
+    it("should allow change owner", async function (){
+        expect(await sps.owner()).to.eq(owner.address)
+        await expect (sps.connect(player1).transferOwnership(otherGuy.address))
+        .to.be.revertedWith("Ownable: caller is not the owner")
+        await expect (sps.connect(owner).transferOwnership(ZERO_ADDRESS))
+        .to.be.revertedWith("Ownable: new owner is the zero address")
+        const tx = await sps.connect(owner).transferOwnership(otherGuy.address)
+        await(tx).wait;
+        expect(await sps.owner()).to.eq(otherGuy.address)
+        console.log(await sps.owner())
+
+    })
+
+    it("should allow add player balance", async function (){
+        const sum = 100;
+        const sum1 = 200;
+        const sum2 = 300;
+        const sum3 = 400;
+        const tx = await sps.connect(player1).addBalance({value: sum});
+        await tx.wait();
+        expect(await sps.connect(player1)._getBalanceAcc())
+        .to.eq(sum)
+        const tl = await sps.connect(player2).addBalance({value: sum1});
+        await tl.wait();
+        expect(await sps.connect(player2)._getBalanceAcc())
+        .to.eq(sum1)
+        expect(await sps.connect(player2).getBalance())
+        .to.eq(sum1+sum)
+        const tk = await sps.connect(player1).addBalance({value: sum3});
+        await tk.wait();
+        const txj = await sps.connect(player2).addBalance({value: sum2});
+        await txj.wait();
+        expect(await sps.connect(player2).getBalance())
+        .to.eq(sum1+sum+sum2+sum3)
+        await expect (await sps.connect(player1).wihdrawBalance())
+        .to.changeEtherBalances([player1, sps], [sum+sum3, -(sum+sum3)])
+        await expect (await sps.connect(player2).wihdrawBalance())
+        .to.changeEtherBalances([player2, sps], [sum1+sum2, -(sum1+sum2)])
+    })
+
+    it("should allow start game", async function (){
+        const sum = 500;
+        const sum1 = 500;
+        const bid = 200;
+        const duration = 600;
+        const tx = await sps.connect(player1).addBalance({value: sum});
+        await tx.wait();
+        const tl = await sps.connect(player2).addBalance({value: sum1});
+        await tl.wait();
+        await expect(sps.connect(player1)
+        .startGameSPS(bid*8,"0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e"))
+        .to.be.revertedWith("Not enough funds!");
+        await expect(sps.connect(player1).startGameSPS(99,"0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e"))
+        .to.be.revertedWithCustomError(
+            sps,
+            "ValueNotEven"
+          );
+        //0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e
+        // console.log(owner.address,player1.address,player2.address)
+        const tg = await sps.connect(player1)
+        .startGameSPS(bid*2,"0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e")
+        await tg.wait();
+        const game1 = await sps.SPS(1)
+        // console.log(game1);
+        const ts = await getTimestamp(tg.blocknumber)
+        expect(game1.endsAt).to.eq(ts+duration)
+        expect(game1.startsAt).to.eq(ts)
+        expect(game1.withrawPriseStopped).to.be.false  
+        expect(game1.playersCount).to.eq(1)
+        expect(game1.winner).to.eq(ZERO_ADDRESS)
+        expect(game1.bidValue).to.eq(bid)
+        expect(game1.first).to.eq(player1.address)
+        expect(game1.second).to.eq(ZERO_ADDRESS)
+        expect(game1.firtstHashedChoice).to.eq("0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e")
+        await expect(tg).to.emit(sps, "gameStart").withArgs(1, game1.startsAt, game1.endsAt, game1.bidValue) 
+    })
+
+    it("should allow make bid", async function (){
+        const sum = 500;
+        const sum1 = 100;
+        const sum2 = 100;
+        const bid = 200;
+        const duration = 500;
+        const duration1 = 601;
+        const tx = await sps.connect(player1).addBalance({value: sum});
+        await tx.wait();
+        const tl = await sps.connect(player2).addBalance({value: sum1});
+        await tl.wait();
+        await expect(sps.connect(player1)
+        .startGameSPS(bid*8,"0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e"))
+        .to.be.revertedWith("Not enough funds!");
+        //0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e
+        const tg = await sps.connect(player1)
+        .startGameSPS(bid*2,"0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e")
+        await tg.wait();
+        await expect(sps.connect(player2).makeChoiceSPS(1,bid,2))
+        .to.be.revertedWith("Not enough funds!");
+        const tm = await sps.connect(player2).addBalance({value: sum2});
+        await tm.wait();
+        await expect(sps.connect(player2).makeChoiceSPS(1,bid,3))
+        .to.be.revertedWith("Wrong choice number!");
+        await expect(sps.connect(player2).makeChoiceSPS(1,bid-2,2))
+        .to.be.revertedWith("Wrong bid value!");
+        const ty = await sps.connect(player2).makeChoiceSPS(1,bid,2)
+        await ty.wait();
+        const tr = await sps.connect(otherGuy).addBalance({value: sum});
+        await tr.wait();
+        await expect(sps.connect(otherGuy).makeChoiceSPS(1,bid,2))
+        .to.be.revertedWith("Someone already play!");
+        const game1 = await sps.SPS(1)
+        expect(game1.withrawPriseStopped).to.be.false  
+        expect(game1.playersCount).to.eq(2)
+        expect(game1.winner).to.eq(ZERO_ADDRESS)
+        expect(game1.bidValue).to.eq(bid)
+        expect(game1.first).to.eq(player1.address)
+        expect(game1.second).to.eq(player2.address)
+        await expect(ty).to.emit(sps, "SomeoneMakeBid").withArgs(1)         
+    })
+
+    it("shouldn't allow make bid after some time", async function (){
+        const sum = 500;
+        const sum1 = 100;
+        const sum2 = 100;
+        const bid = 200;
+        const duration1 = 601;
+        const tx = await sps.connect(player1).addBalance({value: sum});
+        await tx.wait();
+        const tl = await sps.connect(player2).addBalance({value: sum1});
+        await tl.wait();
+        //0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e
+        const tg = await sps.connect(player1)
+        .startGameSPS(bid*2,"0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e")
+        await tg.wait();
+        const tm = await sps.connect(player2).addBalance({value: sum2});
+        await tm.wait();
+        
+        await network.provider.send("evm_increaseTime", [duration1]);
+        await network.provider.send("evm_mine");
+        await expect (sps.connect(player2).makeChoiceSPS(1,bid,2))
+        .to.be.revertedWith("Game over!");
+        await sps.connect(player1).abort(1)
+        await expect(sps.connect(player2).makeChoiceSPS(1,bid,2))
+        .to.be.revertedWith("Prise received or stopped!");    
+    })
+
+    it("shouldn't allow abort untill end game/should allow abort after", async function (){
+        const sum = 500;
+        const sum1 = 500;
+        const bid = 200;
+        const duration1 = 601;
+        const tx = await sps.connect(player1).addBalance({value: sum});
+        await tx.wait();
+        const tl = await sps.connect(player2).addBalance({value: sum1});
+        await tl.wait();
+        //0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e
+        //0-stone, secret - solidity
+        const tg = await sps.connect(player1)
+        .startGameSPS(bid*2,"0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e")
+        await tg.wait();// start #1 game
+        await expect(sps.connect(player1).abort(1))
+        .to.be.revertedWith("Wait until game ends!");
+        await network.provider.send("evm_increaseTime", [duration1]);
+        await network.provider.send("evm_mine");
+        await expect(sps.connect(otherGuy).abort(1))
+        .to.be.revertedWith("You not player!");
+        const tq = await sps.connect(player1).abort(1)//success abort
+        await tq.wait();
+        await expect(tq).to.emit(sps, "gameEnd").withArgs(1, ZERO_ADDRESS )
+
+        await expect(sps.connect(player1).abort(1))
+        .to.be.revertedWith("Prise received or stopped!");
+        const tр = await sps.connect(player1)
+        .startGameSPS(bid*2,"0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e")
+        await tр.wait();//start #2 game
+        const ty = await sps.connect(player2).makeChoiceSPS(2,bid,2)
+        await ty.wait();// makechoice player 2
+        await network.provider.send("evm_increaseTime", [duration1]);
+        await network.provider.send("evm_mine");
+        await expect(sps.connect(player2).abort(2))
+        .to.be.revertedWith("Wait for reveal choice 3 hours!");
+        await expect(sps.connect(player1).abort(2))
+        .to.be.revertedWith("You must reveal choice!");
+        await network.provider.send("evm_increaseTime", [duration1+10800]);//+3 hour
+        await network.provider.send("evm_mine");
+        await expect(sps.connect(player2).abort(2))
+        .to.emit(sps, "gameEnd").withArgs(2,ZERO_ADDRESS)
+        const game1 = await sps.SPS(2)
+        expect(game1.withrawPriseStopped).to.be.true
+        await expect(sps.connect(player2).abort(2))
+        .to.be.revertedWith("Prise received or stopped!");
+        await expect(sps.connect(player1).revealChoice(2,0,"solidity"))
+        .to.be.revertedWith("Prise received or stopped!");//can't revealchoice
+
+        expect(await sps.connect(player2)._getBalanceAcc())
+        .to.eq(sum1)     
+    })
+
+    it("it shouldn't allow reveal choice and withdraw FEE", async function (){
+        const sum = 500;
+        const sum1 = 500;
+        const bid = 200;
+        const duration1 = 601;
+        const tx = await sps.connect(player1).addBalance({value: sum});
+        await tx.wait();
+        const tl = await sps.connect(player2).addBalance({value: sum1});
+        await tl.wait();
+        const tg = await sps.connect(player1)
+        .startGameSPS(bid*2,"0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e")
+        await tg.wait();// start #1 game
+        await expect(sps.connect(player1).revealChoice(1,0,"solidity"))
+        .to.be.revertedWith("Missing opponent!");
+        
+        
+        const ty = await sps.connect(player2).makeChoiceSPS(1,bid,2)
+        await ty.wait();// makechoice player2
+
+        await expect(sps.connect(player1).revealChoice(1,3,"solidity"))
+        .to.be.revertedWith("Wrong choice number!");
+        await expect(sps.connect(player1).revealChoice(1,1,"solidity"))
+        .to.be.revertedWith("You can't change choice!");
+        await expect(sps.connect(player2).revealChoice(1,0,"solidity"))
+        .to.be.revertedWith("You can't change choice!");
+
+        const te = await sps.connect(player1).revealChoice(1, 0, "solidity")
+        await(te).wait;
+        const game1 = await sps.SPS(1)
+        expect(game1.withrawPriseStopped).to.be.true  
+        expect(game1.playersCount).to.eq(2)
+        expect(game1.firstChoice).to.eq(0)
+        expect(game1.winner).to.eq(player2.address)
+        expect (await sps.withdrawFunds()).to.eq(bid*2/100*10)
+        expect (await sps.getWinner(1)).to.eq(player2.address)
+        expect (await sps.connect(player2)._getBalanceAcc()).to.eq((sum1+2*bid)-
+        await sps.withdrawFunds())
+        const ownerAmount = await sps.withdrawFunds()
+        await expect (await sps.connect(owner).withdraw())
+        .to.changeEtherBalances([owner, sps], [ownerAmount, -ownerAmount])
+        await expect(te).to.emit(sps, "gameEnd").withArgs(1, player2.address )
+    })
+
+    it("it shouldn't allow refund in case of a draw", async function (){
+        const sum = 500;
+        const sum1 = 500;
+        const bid = 200;
+        const duration1 = 601;
+        const tx = await sps.connect(player1).addBalance({value: sum});
+        await tx.wait();
+        const tl = await sps.connect(player2).addBalance({value: sum1});
+        await tl.wait();
+        const tg = await sps.connect(player1)
+        .startGameSPS(bid*2,"0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e")
+        await tg.wait();// start #1 game
+        const ty = await sps.connect(player2).makeChoiceSPS(1,bid,0)
+        await ty.wait();// makechoice player2
+        const te = await sps.connect(player1).revealChoice(1, 0, "solidity")
+        await(te).wait;
+        const game1 = await sps.SPS(1)
+        expect(game1.withrawPriseStopped).to.be.true  
+        expect(game1.playersCount).to.eq(2)
+        expect(game1.firstChoice).to.eq(0)
+        expect(game1.winner).to.eq(ZERO_ADDRESS)
+        expect (await sps.withdrawFunds()).to.eq(0)
+        expect (await sps.getWinner(1)).to.eq(ZERO_ADDRESS)
+        expect (await sps.connect(player2)._getBalanceAcc()).to.eq((sum1))
+        expect (await sps.connect(player1)._getBalanceAcc()).to.eq((sum))
+        await expect(te).to.emit(sps, "gameEnd").withArgs(1, ZERO_ADDRESS)
+    })
+
+    it("it shouldn't allow refund in case of a draw", async function (){
+        const sum = 600;
+        const sum1 = 500;
+        const bid = 200;
+        const duration1 = 601;
+        const tx = await sps.connect(player1).addBalance({value: sum});
+        await tx.wait();
+        const tl = await sps.connect(player2).addBalance({value: sum1});
+        await tl.wait();
+        const tg = await sps.connect(player1)
+        .startGameSPS(bid*2,"0x04bfb95d3e70613965503adb0a825391b61e575e879174589d1c53d46733a13e")
+        await tg.wait();// start #1 game
+        const ty = await sps.connect(player2).makeChoiceSPS(1,bid,1)
+        await ty.wait();// makechoice player2
+        const te = await sps.connect(player1).revealChoice(1, 0, "solidity")
+        await(te).wait;
+        const game1 = await sps.SPS(1)
+        expect(game1.withrawPriseStopped).to.be.true  
+        expect(game1.playersCount).to.eq(2)
+        expect(game1.firstChoice).to.eq(0)
+        expect(game1.winner).to.eq(player1.address)
+        expect (await sps.withdrawFunds()).to.eq(await sps.withdrawFunds())
+        expect (await sps.getWinner(1)).to.eq(player1.address)
+        expect (await sps.connect(player2)._getBalanceAcc()).to.eq((sum1-bid))
+
+        expect (await sps.connect(player1)._getBalanceAcc()).to.eq(sum-bid*2 + bid + (bid*2-await sps.withdrawFunds()))
+        await expect(te).to.emit(sps, "gameEnd").withArgs(1, player1.address)
+    })
+})
