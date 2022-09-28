@@ -9,10 +9,7 @@ abstract contract Context {
 
 abstract contract Ownable is Context {
     address private _owner;
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     constructor() {
         _transferOwnership(_msgSender());
     }
@@ -27,9 +24,7 @@ abstract contract Ownable is Context {
         require(owner() == _msgSender(), "Ownable: caller is not the owner");
     }
     function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(
-            newOwner != address(0),
-            "Ownable: new owner is the zero address");
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
         _transferOwnership(newOwner);
     }
 
@@ -83,7 +78,6 @@ contract game is VRFConsumerBaseV2, Ownable {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
         s_subscriptionId = subscriptionId;
     }
-
     VRFCoordinatorV2Interface COORDINATOR;
     uint64 s_subscriptionId;
     address vrfCoordinator = 0x2Ca8E0C643bDe4C2E08ab1fA0da3401AdAD7734D;
@@ -95,7 +89,6 @@ contract game is VRFConsumerBaseV2, Ownable {
     uint256 private valueGamer;
     uint256 count;
     uint256 public withdrawFunds;
-    // uint256 public s_requestId;
     mapping(address => uint256) balances;
 
     mapping(uint256 => gameNumber) public dice;
@@ -140,6 +133,7 @@ contract game is VRFConsumerBaseV2, Ownable {
     }
 
     function fulfillRandomWords(uint256, uint256[] memory randomWords) internal override {
+        require (!dice[count].paySuccess, "Already payed!");
         dice[count].playerDiceRoll = randomWords[0];
         dice[count].casinoDiceRoll = randomWords[1];
         if (dice[count].playerDiceRoll == dice[count].casinoDiceRoll) {
