@@ -87,11 +87,10 @@ contract game is VRFConsumerBaseV2, Ownable {
     uint32 numWords = 2;
     uint256 public FEE = 5;
     uint256 private valueGamer;
-    uint256 count;
     uint256 public withdrawFunds;
     mapping(address => uint256) balances;
-
     mapping(uint256 => gameNumber) public dice;
+    
 
     struct gameNumber {
         address winner;
@@ -99,7 +98,6 @@ contract game is VRFConsumerBaseV2, Ownable {
         uint256 bidValue;
         uint256 playerDiceRoll;
         uint256 casinoDiceRoll;
-        uint256 s_requestId;
         bool paySuccess;
     }
 
@@ -114,60 +112,56 @@ contract game is VRFConsumerBaseV2, Ownable {
     event gameEnd(uint256 indexed gameNumber, address indexed winner);
 
     function start(uint256 _amount) external onlyEvenValue(_amount) {
-        require(_amount <= _getBalanceAcc() && _amount != 0 && !dice[count].paySuccess
-        && _amount <= withdrawFunds, "Not enough funds!");
+        require(_amount <= getBalanceAcc() && _amount != 0
+        &&_amount <= withdrawFunds, "Not enough funds!");
         balances[_msgSender()] -= _amount;
-        dice[count].player = _msgSender();
-        dice[count].bidValue = _amount;
-        emit gameStart(count, dice[count].bidValue);
-        requestRandomWords();
-    }
-
-    function requestRandomWords() internal {
-        dice[count].s_requestId = COORDINATOR.requestRandomWords(
+        uint s_requestId = COORDINATOR.requestRandomWords(
             keyHash,
             s_subscriptionId,
             requestConfirmations,
             callbackGasLimit,
             numWords);
+        require (!dice[s_requestId].paySuccess, "Already payed!");
+        dice[s_requestId].player = _msgSender(); 
+        dice[s_requestId].bidValue = _amount;
+        emit gameStart(s_requestId, dice[s_requestId].bidValue);
     }
 
-    function fulfillRandomWords(uint256, uint256[] memory randomWords) internal override {
-        require (!dice[count].paySuccess, "Already payed!");
-        dice[count].playerDiceRoll = randomWords[0];
-        dice[count].casinoDiceRoll = randomWords[1];
-        if (dice[count].playerDiceRoll == dice[count].casinoDiceRoll) {
-            requestRandomWords();
+    function fulfillRandomWords(uint256 s_requestId, uint256[] memory randomWords) internal override {
+        dice[s_requestId].playerDiceRoll = randomWords[0]; 
+        dice[s_requestId].casinoDiceRoll = randomWords[1];  
+        if (dice[s_requestId].playerDiceRoll == dice[s_requestId].casinoDiceRoll) {
+            dice[s_requestId].paySuccess = true;
+            balances[dice[s_requestId].player] += dice[s_requestId].bidValue;
+            emit gameEnd(s_requestId, dice[s_requestId].winner);
             return;
         }
-        if (dice[count].playerDiceRoll > dice[count].casinoDiceRoll) {
-            dice[count].paySuccess = true;
-            dice[count].winner = dice[count].player;
-            uint256 ownerAmount = ((dice[count].bidValue * 2) / 100) * FEE;
-            uint256 prize = dice[count].bidValue * 2 - ownerAmount;
-            balances[dice[count].winner] += prize;
+        if (dice[s_requestId].playerDiceRoll > dice[s_requestId].casinoDiceRoll) {
+            dice[s_requestId].paySuccess = true;
+            dice[s_requestId].winner = dice[s_requestId].player;
+            uint256 ownerAmount = ((dice[s_requestId].bidValue*2)/100)*FEE;
+            uint256 prize = dice[s_requestId].bidValue*2-ownerAmount;
+            balances[dice[s_requestId].winner] += prize;
             withdrawFunds -= prize;
-            count++;
-            emit gameEnd(count, dice[count].winner);
+            emit gameEnd(s_requestId, dice[s_requestId].winner);
         } else {
-            dice[count].paySuccess = true;
-            dice[count].winner = address(this);
-            withdrawFunds += dice[count].bidValue;
-            count++;
-            emit gameEnd(count, dice[count].winner);
+            dice[s_requestId].paySuccess = true;
+            dice[s_requestId].winner = address(this);
+            withdrawFunds += dice[s_requestId].bidValue;
+            emit gameEnd(s_requestId, dice[s_requestId].winner);
         }
     }
 
-    function getWinner(uint256 _count) public view returns (address) {
+    function getWinner(uint256  _count) public view returns (address) {
         return dice[_count].winner;
     }
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }
-    function _getBalanceAcc() public view returns (uint256) {
+    function getBalanceAcc() public view returns (uint256) {
         return balances[_msgSender()];
     }
-    function wihdrawBalance() external {
+    function wihdrawBalanceAcc() external {
         uint256 amount = balances[_msgSender()];
         balances[_msgSender()] -= amount;
         payable(_msgSender()).transfer(amount);
