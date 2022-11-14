@@ -1,0 +1,52 @@
+
+game.vrfCoordinator (contracts/Dice.sol#83) shadows:
+        - VRFConsumerBaseV2.vrfCoordinator (contracts/Dice.sol#42)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variable-shadowing
+
+game.fulfillRandomWords(uint256,uint256[]) (contracts/Dice.sol#130-153) performs a multiplication on the result of a division:
+        - ownerAmount = ((dice[s_requestId].bidValue * 2) / 100) * FEE (contracts/Dice.sol#142)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#divide-before-multiply
+
+Reentrancy in game.start(uint256) (contracts/Dice.sol#114-128):
+        External calls:
+        - s_requestId = COORDINATOR.requestRandomWords(keyHash,s_subscriptionId,requestConfirmations,callbackGasLimit,numWords) (contracts/Dice.sol#118-123)
+        State variables written after the call(s):
+        - dice[s_requestId].player = _msgSender() (contracts/Dice.sol#125)
+        - dice[s_requestId].bidValue = _amount (contracts/Dice.sol#126)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-2
+
+Reentrancy in game.start(uint256) (contracts/Dice.sol#114-128):
+        External calls:
+        - s_requestId = COORDINATOR.requestRandomWords(keyHash,s_subscriptionId,requestConfirmations,callbackGasLimit,numWords) (contracts/Dice.sol#118-123)
+        Event emitted after the call(s):
+        - gameStart(s_requestId,dice[s_requestId].bidValue) (contracts/Dice.sol#127)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+
+Pragma version^0.8.17 (contracts/Dice.sol#2) necessitates a version too recent to be trusted. Consider deploying with 0.6.12/0.7.6/0.8.16
+solc-0.8.17 is not recommended for deployment
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+
+Contract game (contracts/Dice.sol#76-180) is not in CapWords
+Struct game.gameNumber (contracts/Dice.sol#95-102) is not in CapWords
+Event gamegameStart(uint256,uint256) (contracts/Dice.sol#111) is not in CapWords
+Event gamegameEnd(uint256,address) (contracts/Dice.sol#112) is not in CapWords
+Parameter game.start(uint256)._amount (contracts/Dice.sol#114) is not in mixedCase
+Parameter game.fulfillRandomWords(uint256,uint256[]).s_requestId (contracts/Dice.sol#130) is not in mixedCase
+Parameter game.getWinner(uint256)._count (contracts/Dice.sol#155) is not in mixedCase
+Variable game.COORDINATOR (contracts/Dice.sol#81) is not in mixedCase
+Variable game.s_subscriptionId (contracts/Dice.sol#82) is not in mixedCase
+Variable game.FEE (contracts/Dice.sol#88) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+
+game.slitherConstructorVariables() (contracts/Dice.sol#76-180) uses literals with too many digits:
+        - callbackGasLimit = 1000000 (contracts/Dice.sol#85)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#too-many-digits
+
+game.FEE (contracts/Dice.sol#88) should be constant
+game.callbackGasLimit (contracts/Dice.sol#85) should be constant
+game.keyHash (contracts/Dice.sol#84) should be constant
+game.numWords (contracts/Dice.sol#87) should be constant
+game.requestConfirmations (contracts/Dice.sol#86) should be constant
+game.vrfCoordinator (contracts/Dice.sol#83) should be constant
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-constant
+. analyzed (5 contracts with 81 detectors), 23 result(s) found
