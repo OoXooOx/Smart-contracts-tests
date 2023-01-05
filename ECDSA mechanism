@@ -1,0 +1,73 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.17;
+import "@openzeppelin/contracts@4.8.0/access/Ownable.sol";
+import "@openzeppelin/contracts@4.8.0/utils/cryptography/ECDSA.sol";
+
+contract Payments is Ownable {
+    mapping(address => uint256) public nonces;
+    address public signerAddress;
+
+    constructor(address _signer) payable {
+        require(msg.value > 0);
+        signerAddress = _signer;
+    }
+
+    bytes32 public message1;
+
+    function getClaimView(uint256 amount) external {
+        bytes32 message = keccak256(
+            abi.encodePacked(
+                msg.sender,
+                amount,
+                nonces[msg.sender]++,
+                block.chainid,
+                address(this)
+            )
+        );
+        message1 = message;
+    }
+
+    function getClaimViewPrefix(bytes32 _hash) public pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash)
+            );
+    }
+
+    function claim(uint256 amount, bytes calldata signature) external {
+        bytes32 message = withPrefix(
+            keccak256(
+                abi.encodePacked(
+                    msg.sender,
+                    amount,
+                    nonces[msg.sender]++,
+                    block.chainid,
+                    address(this)
+                )
+            )
+        );
+
+        require(
+            ECDSA.recover(message, signature) == signerAddress ||
+            ECDSA.recover(message, signature) == owner(),
+            "invalid signature!"
+        );
+
+        payable(msg.sender).transfer(amount);
+    }
+
+    function getNonce() public view returns (uint256) {
+        return nonces[msg.sender];
+    }
+
+    function withPrefix(bytes32 _hash) private pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash)
+            );
+    }
+
+    function chain() external view returns (uint256) {
+        return block.chainid;
+    }
+}
