@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.17;
+contract MyContract {
+    error someTrouble();
+    uint192  FIX_ZERO=0;
+    uint192 constant FI3X_ZERO=45;  
+    function helloWorld() public payable  returns (string memory) {  
+        // require(msg.value <= FI3X_ZERO, "Some trouble!");  // deploy 146709  txCost 22659 
+        if (msg.value>=FI3X_ZERO) // deploy 139575  txCost 22656 
+            revert someTrouble(); // difference require/revert 10k Gas
+        require(msg.sender!=address(0), ""); 
+         
+        uint i = 10; // We must define length of array outside from loop
+        for (uint256 j=0; j < i;) {
+                // doSomething[j];
+               unchecked {++j;} // We safe gas
+        }
+        return "Hello, World!";
+    }
+}
