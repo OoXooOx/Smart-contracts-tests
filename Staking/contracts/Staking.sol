@@ -145,7 +145,7 @@ contract Staking is Ownable {
         (bool success, bytes memory response) = address(TST).call(
             abi.encodeWithSignature(
                 "transfer(address,uint256)",
-                _msgSender(),
+                _staker,
                 stakeBalances[_staker][_stakeNumber].amount+extraRewards+
                 stakeBalances[_staker][_stakeNumber].rewardValue)
             );
