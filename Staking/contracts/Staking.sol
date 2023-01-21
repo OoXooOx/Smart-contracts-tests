@@ -117,6 +117,7 @@ contract Staking is Ownable {
         require(block.timestamp>=stakeBalances[_msgSender()][_stakeNumber].endAt,
         "too early");
         require(!stakeBalances[_msgSender()][_stakeNumber].withdraw, "already receive");
+        require(_stakeNumber!=0 && _stakeNumber<=stakeNonce[_msgSender()].current(), "don't do this");
         stakeBalances[_msgSender()][_stakeNumber].withdraw=true;
         tokensStakedByAddress[_msgSender()]-=stakeBalances[_msgSender()][_stakeNumber].amount;
         uint extraRewards = getDaysFromSec((block.timestamp-stakeBalances[_msgSender()][_stakeNumber].endAt))
@@ -137,6 +138,7 @@ contract Staking is Ownable {
         require(block.timestamp>=stakeBalances[_staker][_stakeNumber].endAt,
         "too early");
         require(!stakeBalances[_staker][_stakeNumber].withdraw, "already receive");
+        require(_stakeNumber!=0 && _stakeNumber<=stakeNonce[_staker].current(), "don't do this");
         stakeBalances[_staker][_stakeNumber].withdraw=true;
         tokensStakedByAddress[_staker]-=stakeBalances[_staker][_stakeNumber].amount;
         uint extraRewards = getDaysFromSec((block.timestamp-stakeBalances[_staker][_stakeNumber].endAt))
