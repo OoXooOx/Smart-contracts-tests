@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts\SPS.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../index.html">all files</a> / <a href="index.html">contracts/</a> SPS.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>77/77</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>50/50</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>18/18</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>83/83</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">149×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">30×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">32×</span>
+<span class="cline-any cline-yes">32×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">28×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.8.16;
+&nbsp;
+abstract contract Context {
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
+    }
+}
+&nbsp;
+abstract contract Ownable is Context {
+    address private _owner;
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    constructor() {
+        _transferOwnership(_msgSender());
+    }
+    modifier onlyOwner() {
+        _checkOwner();
+        _;
+    }
+    function owner() public view virtual returns (address) {
+        return _owner;
+    }
+    function _checkOwner() internal view virtual {
+        require(owner() == _msgSender(), "Ownable: caller is not the owner");
+    }
+    function transferOwnership(address newOwner) public virtual onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        _transferOwnership(newOwner);
+    }
+    function _transferOwnership(address newOwner) internal virtual {
+        address oldOwner = _owner;
+        _owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
+    }
+}
+&nbsp;
+contract game is Context, Ownable {
+    uint public FEE=10;
+    uint private valueGamer;
+    uint maxChoiceNumberSPS = 2;
+    uint durationSPS = 600;
+    uint count;
+    uint public withdrawFunds;
+&nbsp;
+    mapping (address=&gt;uint) balances;
+&nbsp;
+    mapping (uint=&gt;gameNumber) public SPS;
+&nbsp;
+    struct gameNumber {
+        uint startsAt;
+        uint endsAt;
+        address winner;
+        bool withrawPriseStopped;
+        uint playersCount;
+        uint bidValue; // first pay 10 (5 - for game, 5 - collateral),  second pay 5
+        address first;
+        address second;
+        bytes32 firtstHashedChoice;
+        uint firstChoice;     // 0 - stone, 1 - scissors, 2 -paper
+        uint secondChoice; // 0 - stone, 1 - scissors, 2 -paper
+        }
+&nbsp;
+    error ValueNotEven();
+    modifier onlyEvenValue(uint _amount) {
+            valueGamer = _amount / 2;
+            if ((2 * valueGamer) != _amount)
+                revert ValueNotEven();
+            _;
+        }
+&nbsp;
+    event gameStart (uint indexed gameNumber,uint indexed startsAt,uint indexed endsAt,uint gameValue);
+    event gameEnd (uint indexed gameNumber, address indexed winner);
+    event SomeoneMakeBid (uint indexed numberGame);
+&nbsp;
+    function startGameSPS (uint _amount, bytes32 _hashedChoice) external onlyEvenValue(_amount) {
+        require(_amount&lt;= _getBalanceAcc() &amp;&amp; _amount!=0 ,"Not enough funds!");
+        balances[_msgSender()]-=_amount;
+        count++;
+        SPS[count].first=_msgSender();
+        SPS[count].firtstHashedChoice=_hashedChoice;
+        SPS[count].startsAt = block.timestamp;
+        SPS[count].endsAt = block.timestamp+durationSPS;
+        SPS[count].playersCount++;
+        SPS[count].bidValue=_amount/2;
+        emit gameStart (count, SPS[count].startsAt, SPS[count].endsAt, SPS[count].bidValue);
+        }
+&nbsp;
+    function abort (uint _count) external  {
+        require(block.timestamp&gt;SPS[_count].endsAt, "Wait until game ends!");
+        require (_msgSender()==SPS[_count].first
+        || _msgSender()==SPS[_count].second, "You not player!");
+        if (_msgSender()==SPS[_count].first) {
+            require (SPS[_count].second==address(0), 
+            "You must reveal choice!");
+            require(!SPS[_count].withrawPriseStopped, "Prise received or stopped!");
+            SPS[_count].withrawPriseStopped=true;
+            balances[_msgSender()]+=SPS[_count].bidValue*2;
+            emit gameEnd(_count, SPS[_count].winner);
+            }
+        if (_msgSender()==SPS[_count].second) {
+            require (block.timestamp&gt;SPS[_count].endsAt+3 hours,
+            "Wait for reveal choice 3 hours!");
+            require(!SPS[_count].withrawPriseStopped, "Prise received or stopped!");
+            SPS[_count].withrawPriseStopped=true;
+            balances[_msgSender()]+=SPS[_count].bidValue;
+            emit gameEnd(_count, SPS[_count].winner);
+            }    
+        } 
+&nbsp;
+    function makeChoiceSPS (uint _count, uint _amount, uint _choice)
+    external {
+        require(!SPS[_count].withrawPriseStopped, "Prise received or stopped!");
+        require(_amount&lt;=_getBalanceAcc(),"Not enough funds!");
+        require(_choice&lt;=maxChoiceNumberSPS, "Wrong choice number!");
+        require(block.timestamp&lt;SPS[_count].endsAt, "Game over!");
+        require(_amount==SPS[_count].bidValue, "Wrong bid value!");
+        require (SPS[_count].second==address(0), "Someone already play!");
+        balances[_msgSender()]-=_amount;
+        SPS[_count].second=_msgSender();
+        SPS[_count].secondChoice=_choice;
+        SPS[_count].playersCount++;
+        emit SomeoneMakeBid (_count);
+        }
+    
+    function revealChoice (uint _count, uint _choice, string calldata _secret) external {
+        require(!SPS[_count].withrawPriseStopped, "Prise received or stopped!");
+        require(SPS[_count].second!=address(0), "Missing opponent!");
+        require(_choice&lt;=maxChoiceNumberSPS, "Wrong choice number!");
+        bytes32 commit=keccak256(abi.encode(_choice, _secret, _msgSender()));
+        require(commit==SPS[_count].firtstHashedChoice, "You can't change choice!");
+        SPS[_count].withrawPriseStopped=true;
+        SPS[_count].firstChoice=_choice;
+        if (SPS[_count].firstChoice==SPS[_count].secondChoice) {
+            balances[_msgSender()]+=SPS[_count].bidValue*2;
+            balances[SPS[count].second]+=SPS[_count].bidValue;
+            emit gameEnd(_count, SPS[_count].winner);
+        }
+        if (SPS[_count].firstChoice==0
+        &amp;&amp; SPS[_count].secondChoice==1 
+        || SPS[_count].firstChoice==1
+        &amp;&amp; SPS[_count].secondChoice==2
+        || SPS[_count].firstChoice==2
+        &amp;&amp; SPS[_count].secondChoice==0
+        ){
+            SPS[_count].winner=SPS[_count].first;
+            uint ownerAmount=SPS[_count].bidValue*2/100*FEE;
+            balances[SPS[_count].winner]+=SPS[_count].bidValue*3-ownerAmount;
+            withdrawFunds+=ownerAmount;
+            emit gameEnd(_count, SPS[_count].winner);
+            }
+        if (SPS[_count].firstChoice==1
+        &amp;&amp; SPS[_count].secondChoice==0
+        || SPS[_count].firstChoice==0
+        &amp;&amp; SPS[_count].secondChoice==2
+        || SPS[_count].firstChoice==2
+        &amp;&amp; SPS[_count].secondChoice==1
+        ){
+            SPS[_count].winner=SPS[_count].second;
+            uint ownerAmount=SPS[_count].bidValue*2/100*FEE;
+            balances[SPS[_count].winner]+=SPS[_count].bidValue*3-ownerAmount;
+            withdrawFunds+=ownerAmount;
+            emit gameEnd(_count, SPS[_count].winner);
+            }
+        } 
+&nbsp;
+    function getWinner (uint _count) public view returns(address) {
+        return SPS[_count].winner;
+        }
+        
+    function getBalance () public view returns (uint) {
+        return address(this).balance;
+        }
+&nbsp;
+    function _getBalanceAcc () public view returns(uint){
+        return balances[_msgSender()];
+        }
+&nbsp;
+    function wihdrawBalance () external {
+        uint amount =  balances[_msgSender()];
+        balances[_msgSender()] -= amount;
+        payable(_msgSender()).transfer(amount);
+        }
+&nbsp;
+    function withdraw () external onlyOwner {
+        uint _amount = withdrawFunds;
+        withdrawFunds -= _amount;
+        payable(_msgSender()).transfer(_amount);
+        }
+&nbsp;
+    function addBalance () external payable onlyEvenValue(msg.value){
+        balances[_msgSender()] += msg.value;
+        }
+&nbsp;
+}</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Sep 01 2022 02:44:40 GMT+0300 (Восточная Европа, летнее время)
+</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>
