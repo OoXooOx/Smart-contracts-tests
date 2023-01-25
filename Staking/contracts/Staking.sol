@@ -63,6 +63,8 @@ contract Staking is Ownable {
     IERC20  public immutable TST;
     uint constant SEC_IN_DAY=86400;
     uint constant DAYS_IN_YEAR=365;
+    uint public uniqueAddressesStaked;
+    uint public totalTokensStaked;
     using Counters for Counters.Counter;
     struct Stake {
         uint amount;
@@ -77,14 +79,13 @@ contract Staking is Ownable {
     mapping(address=>Counters.Counter) public stakeNonce;
     mapping(address=>uint) public tokensStakedByAddress;
     bool public stakingEnabled;
-    event deposit(uint stakeId, address staker);
-    event withdrawal(uint stakeId, address claimer);
+    event deposit(uint indexed stakeId, address indexed staker);
+    event withdrawal(uint indexed stakeId, address indexed claimer);
 
     function stake (uint _amount, uint _timeInDays) external {
         require(stakingEnabled, "disabled"); 
-        require(_amount!=0, "Wrong amount"); // && _amount<=TST.balanceOf(_msgSender())
+        require(_amount!=0, "Wrong amount");
         require(_timeInDays>=30, "30 days min");
-        // uint balBefore = TST.balanceOf(address(this));// ?????
         (bool success, bytes memory response) = address(TST).call(
             abi.encodeWithSignature(
                 "transferFrom(address,address,uint256)",
@@ -93,13 +94,17 @@ contract Staking is Ownable {
                 _amount)
             );
         require(success && abi.decode(response, (bool)), "Failed send funds");
-        // uint balAfter = TST.balanceOf(address(this));/// ?????
-        // require (balAfter-balBefore >= _amount, "Dont receive TST");/// ?????
+        if (stakeNonce[_msgSender()].current() == 0) {
+            unchecked {
+                uniqueAddressesStaked++;
+            }
+        }
         stakeNonce[_msgSender()].increment();
         stakeBalances[_msgSender()][stakeNonce[_msgSender()].current()].amount=_amount;
         stakeBalances[_msgSender()][stakeNonce[_msgSender()].current()].startAt=block.timestamp;
         stakeBalances[_msgSender()][stakeNonce[_msgSender()].current()].endAt=block.timestamp+getSecInDays(_timeInDays);
         tokensStakedByAddress[_msgSender()]+=_amount;
+        totalTokensStaked+=_amount;
         uint length = rewards_.length;
         uint rewardTime;
         for (uint i=0; i<length;){
@@ -131,6 +136,7 @@ contract Staking is Ownable {
                 stakeBalances[_msgSender()][_stakeNumber].rewardValue)
             );
         require(success && abi.decode(response, (bool)), "Failed to send funds!");
+        totalTokensStaked-=stakeBalances[_msgSender()][_stakeNumber].amount;
         emit withdrawal(_stakeNumber, _msgSender());
     }
 
@@ -152,6 +158,7 @@ contract Staking is Ownable {
                 stakeBalances[_staker][_stakeNumber].rewardValue)
             );
         require(success && abi.decode(response, (bool)), "Failed to send funds!");
+        totalTokensStaked-=stakeBalances[_staker][_stakeNumber].amount;
         emit withdrawal(_stakeNumber, _staker);
     }
     //↓↓↓↓↓↓// SETTER //↓↓↓↓↓↓
