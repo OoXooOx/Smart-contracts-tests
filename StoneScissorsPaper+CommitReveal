@@ -157,7 +157,7 @@ contract game is Context, Ownable {
         ){
             SPS[_count].winner=SPS[_count].second;
             uint ownerAmount=SPS[_count].bidValue*2/100*FEE;
-            balances[SPS[_count].winner]+=SPS[_count].bidValue*3-ownerAmount;
+            balances[SPS[_count].winner]+=SPS[_count].bidValue*2-ownerAmount;
             withdrawFunds+=ownerAmount;
             emit gameEnd(_count, SPS[_count].winner);
             }
