@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity 0.8.19;
+
+interface IGetBool {
+    function getBool () external view returns (bool);
+}   
+
+contract TrueOrFalse {
+    function callMe (address addr) external view returns (bool) {
+        bool x = IGetBool(addr).getBool();
+        bool y = IGetBool(addr).getBool();
+        require ((x && y) != (x || y), "Bad comparison!");
+        require(msg.sender==tx.origin, "Bad sender!");
+        return true;
+    }
+}
