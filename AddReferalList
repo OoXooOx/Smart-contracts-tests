@@ -8,11 +8,12 @@ contract sample{
     function addRefer(address refer) external {
         uint256 found;
         uint256 length = referalList[refer].length;
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length;) {
             if (referalList[refer][i] == msg.sender) {
                 found = 1;
                 break;
             }
+            unchecked{++i;}
         }
         if (found == 0) {
             referalList[refer].push(msg.sender);
