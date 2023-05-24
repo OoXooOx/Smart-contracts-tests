@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity 0.8.19;
+contract sample{
+    mapping(address => address[]) public referalList;
+    //refer=>referals
+
+    function addRefer(address refer) external {
+        uint256 found;
+        uint256 length = referalList[refer].length;
+        for (uint256 i = 0; i < length; i++) {
+            if (referalList[refer][i] == msg.sender) {
+                found = 1;
+                break;
+            }
+        }
+        if (found == 0) {
+            referalList[refer].push(msg.sender);
+        } 
+    }
+}
