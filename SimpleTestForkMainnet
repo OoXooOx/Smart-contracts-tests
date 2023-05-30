@@ -1,0 +1,28 @@
+//npx hardhat node --fork https://eth-mainnet.g.alchemy.com/v2/<API_KEY> --fork-block-number 17370579 
+//npx hardhat console --network localhost
+//npx hardhat test --network localhost
+
+
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
+const helpers = require("@nomicfoundation/hardhat-network-helpers");
+
+
+describe("forktest", function () {
+
+    it("sets owner", async function () {
+        const before =  await ethers.provider.getBalance("0x8ba1f109551bd432803012645ac136ddd64dba72");
+        const address = "0x73AF3bcf944a6559933396c1577B257e2054D935";
+        await helpers.impersonateAccount(address);
+        const impersonatedSigner = await ethers.getSigner(address);
+
+        tx = {
+            to: "0x8ba1f109551bd432803012645ac136ddd64dba72",
+            value: ethers.utils.parseEther("300")
+        }
+        const sendTx = await impersonatedSigner.sendTransaction(tx);
+        await sendTx.wait();
+        const after =  await ethers.provider.getBalance("0x8ba1f109551bd432803012645ac136ddd64dba72");
+        console.log(sendTx, before, after);
+    })
+})
