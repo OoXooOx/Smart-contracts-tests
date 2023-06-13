@@ -1,0 +1,16 @@
+        // Voter storage newVoter = Voters[_addrVoter];  // 91913  gas        
+        // newVoter.FirstName = _FirstName;
+        // newVoter.LastName = _LastName;
+        // newVoter.age = _age; // FIRST METHOD  
+
+        
+        // Voters [_addrVoter] = Voter ({  // 92000   gas
+        //     FirstName: _FirstName,
+        //     LastName: _LastName,
+        //     age: _age
+        // }); //        SECOND METHOD
+
+        // Voters[_addrVoter].FirstName=_FirstName; // 92080 gas   
+        // Voters[_addrVoter].LastName=_LastName;
+        // Voters[_addrVoter].age=_age;
+        // // THIRD METHOD
