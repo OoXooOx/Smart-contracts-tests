@@ -1,0 +1,26 @@
+const bytecode1 = require("./bytecode1.json");
+const bytecode2 = require("./bytecode2.json");
+
+
+function compareBytecodes(bytecode1, bytecode2) {
+  if (bytecode1.length !== bytecode2.length) {
+    console.log("Bytecode lengths are different.");
+    return;
+  }
+
+  for (let i = 0; i < bytecode1.length; i += 2) {
+    const byte1 = bytecode1.slice(i, i + 2);
+    const byte2 = bytecode2.slice(i, i + 2);
+
+    if (byte1 !== byte2) {
+      console.log(`Difference found at byte ${i / 2}:`);
+      console.log(`Bytecode 1: ${byte1}`);
+      console.log(`Bytecode 2: ${byte2}`);
+    }
+  }
+
+  console.log("Bytecode comparison completed.");
+  console.log(bytecode1.length, bytecode2.length);
+}
+
+compareBytecodes(bytecode1, bytecode2);
