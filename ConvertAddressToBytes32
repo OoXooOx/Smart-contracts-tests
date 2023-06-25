@@ -1,0 +1,15 @@
+function addressesToBytes32Array(address[] memory addresses) public pure returns (bytes32[] memory){
+        bytes32[] memory result = new bytes32[](addresses.length);
+        for (uint256 i = 0; i < addresses.length; i++) {
+            bytes32 addressBytes;
+            assembly {
+                addressBytes := mload(add(addresses, add(0x20, mul(i, 0x20))))
+            }
+            result[i] = addressBytes;
+        }
+        return result;
+    }
+
+    function getAddr(bytes32 bytes) public pure returns(address addr) {
+        addr=address(uint160(uint256(bytes)));
+    }
