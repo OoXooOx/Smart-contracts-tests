@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity >=0.7.0 <0.9.0;
+
+contract First {
+    uint public x;
+    // constructor(uint a) {
+    //     x = a;
+    // }
+
+
+}                   
+            // factory   0x97fd63D049089cd70D9D139ccf9338c81372DE68   
+            // token 0   0x43cA9bAe8dF108684E5EAaA720C25e1b32B0A075
+            // token 1   0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+
+contract C {
+    function createDSalted(address tokenA, address tokenB ) public pure returns(address){ 
+        require(2 < 3, "Smells fishy");     // uint arg
+        address predictedAddress = address(uint160(uint(keccak256(abi.encodePacked(
+            bytes1(0xff),
+            0x97fd63D049089cd70D9D139ccf9338c81372DE68,
+            keccak256(abi.encodePacked(tokenA, tokenB)),
+            "0x045bf7e055dbad74413ad5478e354f872985ef20957c9a1336aef9d18b54e5a7" // init code hash
+            // keccak256(abi.encodePacked(
+            //     type(First).creationCode
+            //     // abi.encode(arg)
+            // )
+            // )
+        )))));
+
+        // D d = new D{salt: salt}(arg);
+        // First d = new First{salt: keccak256(abi.encodePacked(tokenA, tokenB))}(); //
+        // require(address(d) == predictedAddress);
+        return predictedAddress; // 0x44EB30ECE9B7Cde132eb6Bc196AD05751465E5b7
+    }
+}
