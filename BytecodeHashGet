@@ -14,3 +14,58 @@ contract retrieveBytecode {
         bytecodeHash = keccak256(abi.encodePacked(_bytecode));
     }
 }
+
+
+
+
+//SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.6.6;
+
+contract sss {
+    address factory=0x97fd63D049089cd70D9D139ccf9338c81372DE68;
+    address tokenA=0x43cA9bAe8dF108684E5EAaA720C25e1b32B0A075;
+    address tokenB=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
+    // create create2
+    //create depend from deployer address and nonce 
+    // create2 depend from deployer address, bytecodeHash of init code, salt 
+
+   function pairFor() external view returns (address pair) {
+        pair = address(uint(keccak256(abi.encodePacked(
+                hex'ff',
+                factory,
+                keccak256(abi.encodePacked(tokenA,tokenB)), // salt
+                hex'bf6c7ce1be647fa3c27fc0b1f3b7540819d8ac0ebbdb63fd03a38fc585a1bdce' // init code hash
+            ))));
+    }
+}               //23816 
+
+
+//0x045bf7e055dbad74413ad5478e354f872985ef20957c9a1336aef9d18b54e5a7
+// pragma solidity ^0.8.0;
+
+// contract ContractFactory {
+
+    
+
+//     function deployContract(bytes memory bytecode, bytes32 salt) external {
+//         address newContract = create2(0, bytecode, bytecode.length, salt);
+//     }
+
+//     function create2(uint256 _value, bytes memory _code, uint256 _codeLength, bytes32 _salt) internal returns (address) {
+//         address createdAddress;
+//         assembly {
+//             createdAddress := create2(_value, add(_code, 0x20), _codeLength, _salt)
+//             if iszero(extcodesize(createdAddress)) {
+//                 revert(0, 0)
+//             }
+//         }
+//         return createdAddress;
+//     }
+// }
+
+//         bytes memory bytecode = type(UniswapPair).creationCode;
+//         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
+//         assembly {
+//             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
+//         }
