@@ -1,0 +1,16 @@
+You can do it the same way (except with provider.getTransactionCount(accountAddress, “pending”).
+ But if you execute too many transactions too quickly, the “pending” will still get overrun.
+
+I would recommend for now, if you are executing many transactions, you can do something like:
+
+let baseNonce = provider.getTransacrionCount(wallet.getAddress());
+let nonceOffset = 0;
+function getNonce() {
+  return baseNonce.then((nonce) => (nonce + (nonceOffset++)));
+}
+let tx0 = { to: a0, value: v0, nonce: getNonce() };
+wallet.sendTransaction(tx0);
+let tx1 = { to: a1, value: v1, nonce: getNonce() };
+wallet.sendTransaction(tx1);
+
+And so on. Every call to getNonce gives you the next nonce. That’s basically all the NonceManager does. :)
