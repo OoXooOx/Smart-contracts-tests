@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0;
-
+//0xC31B916E0004295848b2d8B9F5e2Ea09b0B1c7e3 - SC pair 
+//0xd99d1c33f9fc3444f8101754abc46c52416550d1 - SC router 
+//0x6725F303b657a9451d8BA641348b6761A6CC7a17 - SC factory
+//0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd - SC WBNB
+//0x277bf3B4aeA25936855b511efaAf3B2Db4c8DBDC - SC FSPS Token 
 
 contract sample{
 
