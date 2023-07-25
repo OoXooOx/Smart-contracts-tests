@@ -25,5 +25,4 @@ contract sample{
             referralList[refer].push(msg.sender);
         }
     }
-    }
 }
