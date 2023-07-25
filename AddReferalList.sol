@@ -6,21 +6,24 @@ contract sample{
     //refer=>referrals
 
     function addRefer(address refer) external {
-        uint256 found; 
+        uint256 found;
         uint256 length = referralList[refer].length;
+        uint i;
         // we looking for match address, if our array of refferals already include it,
         // then we do nothing
-        for (uint256 i = 0; i < length;) { 
+        while (i < length && found == 0) {
             if (referralList[refer][i] == msg.sender) {
                 found = 1;
-                break;
             }
-            unchecked{++i;}
+            unchecked {
+                ++i;
+            }
         }
         // if we NOT found match address in array, only then we add it
         // for certain refer
-        if (found == 0) { 
+        if (found == 0) {
             referralList[refer].push(msg.sender);
-        } 
+        }
+    }
     }
 }
