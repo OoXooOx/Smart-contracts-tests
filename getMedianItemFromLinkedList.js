@@ -31,6 +31,20 @@ function getMedianItem ( list ) {
     // your awesome code here
     // 
  }
+
+//ChatGPT сказал что кожаные мешки с костями будут скоро ликвидированы
+//↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+//  function getMedianItem(list) {
+//     let slowPointer = list;
+//     let fastPointer = list;
+    
+//     while (fastPointer && fastPointer.next) {
+//       slowPointer = slowPointer.next;
+//       fastPointer = fastPointer.next.next;
+//     }
+  
+//     return slowPointer;
+//   }
  
  // driver code Вспомогательный для теста код
  const node = (data, next) => ({data, next});
