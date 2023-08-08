@@ -1,0 +1,31 @@
+1. Single responsibility
+2. Open/closed principle
+3. Liskova substitution
+4. Interface segregation
+5. Dependency inversion
+
+    Single Responsibility Principle (SRP): 
+This principle states that a class should have only one reason to change.
+In other words, a class should have a single responsibility or concern.
+This helps keep classes focused and makes the system easier to understand and maintain.
+
+    Open/Closed Principle (OCP):
+The Open/Closed Principle suggests that software entities (such as classes, modules, functions)
+should be open for extension but closed for modification. This means that you should be able to add new functionality
+to a system without modifying existing code.
+
+    Liskov Substitution Principle (LSP):
+The Liskov Substitution Principle emphasizes that objects of a superclass should be replaceable with objects of a subclass
+without affecting the correctness of the program. In other words, derived classes should be able to be substituted
+for their base classes without altering the behavior of the program.
+
+    Interface Segregation Principle (ISP):
+The Interface Segregation Principle advocates for keeping interfaces small and focused.
+A class should not be forced to implement methods it does not use.
+This prevents "fat" interfaces that require implementing unnecessary methods.
+
+    Dependency Inversion Principle (DIP):
+The Dependency Inversion Principle suggests that high-level modules should not depend on low-level modules.
+Instead, both should depend on abstractions (interfaces or abstract classes).
+Additionally, abstractions should not depend on details; details should depend on abstractions.
+This promotes decoupling and flexibility in the codebase.
