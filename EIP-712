@@ -1,0 +1,140 @@
+ Front end part↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+
+ //1st Method When we use privat key of EOA and directly create signature
+        const  validPayload = ethers.utils.defaultAbiCoder.encode(
+            ["bytes32", "address", "address", "uint256", "uint256", "uint256"],
+            [
+            "0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9", // PERMIT_TYPEHASH
+            "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",   // owner
+            "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",   // spender
+            ethers.BigNumber.from("2000000000000000000"),   // amount
+            1,                                              // nonce
+            1724495681                                      // deadline
+            ]
+          )
+        console.log("valid", validPayload);
+        const hash = ethers.utils.solidityKeccak256(["bytes"], [validPayload]);
+        console.log(hash); 
+
+        const  domainSeparator = "0x167c8552f3d356ceaafc60d54bc9ea01150b10bade249d5b57039fdb119558af" // hash from SC
+
+        const data_ = ethers.utils.solidityPack(
+            ["string", "bytes32", "bytes32"],
+            ['\x19\x01', domainSeparator, hash ]  )
+        console.log("data_", data_);
+    
+        const data = ethers.utils.solidityKeccak256(["bytes"], [data_])
+        console.log("data", data);
+        // key from [0] acc hardhat
+        const key = new ethers.utils.SigningKey("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")  
+        const signData = key.signDigest(data)
+        console.log("signature", signData);
+        //compact: '0x9d4f915b836d5bf4108d9980c303c291dc1bad24e0f95c217e21c4a61dd64988af0a275ff4a105cf3b4228ea2b489be101a759bb1532c50cacc9d813e197fadd'
+
+
+
+        //2nd Method  We use method ethers.js "_signTypedData" for create valid signature
+        const domain = {
+            name: 'Uniswap LPs',
+            version: '1',
+            chainId: 1337,
+            verifyingContract: CONTRACT_PAIR.address //0xe89F5c37611aAD757C68c86ee41144eD6D78fa8C
+        };
+
+        const types = {
+            Permit:[ // it's necessary write exactly "Permit". If we change this name - we change hash
+                // { name: "PERMIT_TYPEHASH", type: "bytes32" }, // no need send PERMIT_TYPEHASH here
+                { name: "owner", type: "address" },
+                { name: "spender", type: "address" },
+                { name: "value", type: "uint256" },
+                { name: "nonce", type: "uint256" },
+                { name: "deadline", type: "uint256" },
+            ]
+          }
+            
+        const value = {
+            //   PERMIT_TYPEHASH: "0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9",
+            owner: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            spender : "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            value: ethers.BigNumber.from("2000000000000000000"),
+            nonce: 1,
+            deadline: 1724495681
+        };
+
+        //check for right hash of domain. As we can see it's equal to "domainSeparator"
+        const encode = ethers.utils._TypedDataEncoder.hashDomain(domain, types, value) 
+        console.log("encode domain separator", encode); //0x167c8552f3d356ceaafc60d54bc9ea01150b10bade249d5b57039fdb119558af
+
+        const xxxxxxx =  ethers.utils._TypedDataEncoder.getPayload(domain , types , value )
+        console.log("xxxxx", xxxxxxx);
+
+        const decodeHash = ethers.utils._TypedDataEncoder.hash(domain, types, value) // 
+        console.log("decode hash", decodeHash); //
+
+        // it's equal to owner.sign(ethers.utils.solidityKeccak256("\x19\x01", domainSeparator, hash))
+        const signature = await owner._signTypedData(domain, types, value); 
+        console.log( "signature for work", signature);
+
+        const { r, s, v } = ethers.utils.splitSignature(signature);          
+        console.log('r:', r);
+        console.log('s:', s);
+        console.log('v:', v);
+
+        const signerAddress = ethers.utils.verifyTypedData(
+            domain,
+            types,
+            value,
+            signature
+        );
+        console.log("signerAddress", signerAddress); //0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+
+
+Solidity part↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ 
+
+
+function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
+        require(deadline >= block.timestamp, 'Uniswap: EXPIRED');
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                '\x19\x01',
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        PERMIT_TYPEHASH, 
+                        owner,  
+                        spender, 
+                        value, 
+                        nonces[owner]++, 
+                        deadline))
+            )
+        );
+        address recoveredAddress = ecrecover(digest, v, r, s);
+        require(recoveredAddress != address(0) && recoveredAddress == owner, 'Uniswap: INVALID_SIGNATURE');
+        _approve(owner, spender, value);
+    }
+
+
+function testtt() external pure returns (address) {
+        bytes32 r = 0x9d4f915b836d5bf4108d9980c303c291dc1bad24e0f95c217e21c4a61dd64988;
+        bytes32 s = 0x2f0a275ff4a105cf3b4228ea2b489be101a759bb1532c50cacc9d813e197fadd;
+        uint8 v = 28;
+        bytes32 domainSeparator = 0x167c8552f3d356ceaafc60d54bc9ea01150b10bade249d5b57039fdb119558af;
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator,
+                keccak256(
+                    abi.encode(
+                        0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9,
+                        0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,
+                        0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0,
+                        2000000000000000000,
+                        1,
+                        1724495681
+                    )
+                )
+            )
+        );
+        address recoveredAddress = ecrecover(digest, v, r, s);
+        return recoveredAddress; //0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+    }
