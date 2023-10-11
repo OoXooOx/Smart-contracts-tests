@@ -1,10 +1,43 @@
 // I modified swapTokensForExactTokens() and swapExactTokensForTokens(). 
-// Added mapping referAmounts, mapping referList, withdraw function for refer and setReferFee() function.
-// Other code not mine.
+
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.19;
+
+contract referVault {
+    address constant router = 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9;
+
+    mapping(address => mapping(address => uint256)) public referAmounts;
+    
+    function setReferReward(address _refer, address _token, uint _amount) external {
+        require(msg.sender==router, "invalid caller");
+        referAmounts[_refer][_token]=_amount;
+    }
+
+    // **** REFER FUNCTIONS ****
+    function referWithdraw(address token) external {
+        require(token != address(0), "Wrong token");
+        uint256 amount = referAmounts[msg.sender][token];
+        require(amount != 0, "nothing withdraw");
+        referAmounts[msg.sender][token] = 0;
+        (bool success, bytes memory response) = address(token).call(
+            abi.encodeWithSignature(
+                "transfer(address,uint256)",
+                msg.sender,
+                amount)
+            );
+        require(success && (response.length == 0 || abi.decode(response, (bool))), "Failed send funds");
+    }
+}
+
+
 
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity =0.6.6;
+
+interface IREF{
+    function setReferReward(address _refer, address _token, uint _amount) external;
+}
 
 interface IUNIFactory {
     function getPair(address tokenA, address tokenB)
@@ -685,12 +718,13 @@ interface ISwapFeeReward {
 contract UNIRouter02 is IUNIRouter02, Ownable {
     using SafeMath for uint256;
 
+    IREF immutable refSC;
+
     address public immutable override factory;
     address public immutable override WETH;
     address public override swapFeeReward;
     uint256 public referFee = 5; // 0,05%
 
-    mapping(address => mapping(address => uint256)) referAmounts;
     mapping(address => address) referList; //referal=>refer
 
     modifier ensure(uint256 deadline) {
@@ -698,9 +732,10 @@ contract UNIRouter02 is IUNIRouter02, Ownable {
         _;
     }
 
-    constructor(address _factory, address _WETH) public {
+    constructor(address _factory, address _WETH, address _refSC) public {
         factory = _factory;
         WETH = _WETH;
+        refSC = IREF(_refSC);
     }
 
     receive() external payable {
@@ -1089,12 +1124,10 @@ contract UNIRouter02 is IUNIRouter02, Ownable {
             TransferHelper.safeTransferFrom(
                 path[0],
                 msg.sender,
-                address(this),
+                address(refSC),
                 amountRefer
             );
-            referAmounts[referList[msg.sender]][path[0]] = referAmounts[
-                referList[msg.sender]
-            ][path[0]].add(amountRefer);
+            refSC.setReferReward(referList[msg.sender],path[0],amountRefer);
         }
         _swap(amounts, path, to);
     }
@@ -1136,12 +1169,10 @@ contract UNIRouter02 is IUNIRouter02, Ownable {
             TransferHelper.safeTransferFrom(
                 path[0],
                 msg.sender,
-                address(this),
+                address(refSC),
                 amountRefer
             );
-            referAmounts[referList[msg.sender]][path[0]] = referAmounts[
-                referList[msg.sender]
-            ][path[0]].add(amountRefer);
+            refSC.setReferReward(referList[msg.sender],path[0],amountRefer);
         }
         _swap(amounts, path, to);
     }
@@ -1388,15 +1419,6 @@ contract UNIRouter02 is IUNIRouter02, Ownable {
         uint256 reserveB
     ) public pure virtual override returns (uint256 amountB) {
         return UNILibrary.quote(amountA, reserveA, reserveB);
-    }
-
-    // **** REFER FUNCTIONS ****
-    function referWithdraw(address refer, address token) external {
-        require(refer == msg.sender, "Wrong refer");
-        require(token != address(0), "Wrong token");
-        uint256 amount = referAmounts[refer][token];
-        referAmounts[refer][token] = referAmounts[refer][token].sub(amount);
-        TransferHelper.safeTransfer(token, msg.sender, amount);
     }
 
     // **** GET FUNCTIONS ****
