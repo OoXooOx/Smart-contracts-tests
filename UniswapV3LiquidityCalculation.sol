@@ -749,6 +749,8 @@ library LiquidityMath {
     }
 }
 
+
+
 library TickMath {
     /// @dev The minimum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**-128
     int24 internal constant MIN_TICK = -887272;
@@ -756,7 +758,7 @@ library TickMath {
     int24 internal constant MAX_TICK = -MIN_TICK;
 
     /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
-    uint160 internal constant MIN_SQRT_RATIO = 4295128739;
+    uint160 internal constant MIN_SQRT_RATIO = 4295128739; // 4295128740
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO =
         1461446703485210103287273052203988822378723970342;
@@ -767,7 +769,7 @@ library TickMath {
     /// @return sqrtPriceX96 A Fixed point Q64.96 number representing the sqrt of the ratio of the two assets (token1/token0)
     /// at the given tick
     function getSqrtRatioAtTick(int24 tick)
-        internal
+        public
         pure
         returns (uint160 sqrtPriceX96)
     {
@@ -1869,8 +1871,44 @@ contract LiquidityCalculation {
         );
     }
 
-    function getTickFromPrice(uint160 _SqrtPX96) external pure returns (int24 tick) {
-        tick = TickMath.getTickAtSqrtRatio(_SqrtPX96);
+    function getSqrtRatioAtTick(int24 _tick) public pure returns (uint160 sqrtPriceX96) {
+        sqrtPriceX96=TickMath.getSqrtRatioAtTick(_tick);
+    }
+
+    function getLiquidityFromTicks(
+        int24 tickLower,
+        int24 tickUpper,
+        int24 tickCurrent,
+        uint256 amount0Desired,
+        uint256 amount1Desired)
+        external
+        pure
+        returns (
+            uint128 liquidity,
+            uint160 sqrtPriceLowerX96,
+            uint160 sqrtPriceUpperX96
+            )
+    {
+        sqrtPriceLowerX96 = TickMath.getSqrtRatioAtTick(tickLower);
+        sqrtPriceUpperX96 = TickMath.getSqrtRatioAtTick(tickUpper);
+        uint160 sqrtCurrentPriceX96 = getSqrtRatioAtTick(tickCurrent);
+       
+
+
+        liquidity = LiquidityMath.getLiquidityForAmounts(
+            sqrtCurrentPriceX96,
+            sqrtPriceLowerX96,
+            sqrtPriceUpperX96,
+            amount0Desired,
+            amount1Desired
+        );
+
+
+
+    }
+
+    function getTickFromSqrtPriceX96(uint160 _SqrtPX96) external pure returns (int24 tick) {
+        tick = TickMath.getTickAtSqrtRatio(_SqrtPX96); //4295128740
     }
 
     function getTickFromPrice(uint256 price) public pure returns (int24 tick_, uint160 SqrtPX96) {
@@ -1922,4 +1960,8 @@ contract LiquidityCalculation {
             result -= int24(tickSpacing);
         }
     }
+
+   
+    //sqrtPriceX96 4295343490   tick -887271
+    //sqrtPriceX96 4295558252   tick -887270
 }
