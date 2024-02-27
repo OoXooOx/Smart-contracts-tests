@@ -1833,6 +1833,7 @@ contract LiquidityCalculation {
     //input:
     //[4545, 5500, 1000000000000000000, 5000000000000000000000, current Price]
     // [4545, 5500, 1000000000000000000, 5000000000000000000000, 5000]
+    //[1, 30, 100000000000000000000000, 0, 5000]
     //result:
     //1517818840967415409418 - with calc in SC if current Price 5000
     //1517818840967415409418 - with hard code sqrtCurrentPriceX96 5602277097478613991869082763264
@@ -1847,6 +1848,7 @@ contract LiquidityCalculation {
             uint128 liquidity, 
             int24 tickLower, 
             int24 tickUpper,
+            int24 tickCurrent,
             uint160 sqrtPriceLowerX96,
             uint160 sqrtPriceUpperX96
             )
@@ -1855,7 +1857,8 @@ contract LiquidityCalculation {
         sqrtPriceLowerX96 = TickMath.getSqrtRatioAtTick(tickLower);
         (tickUpper, ) = getTickFromPrice(params.upperPrice);
         sqrtPriceUpperX96 = TickMath.getSqrtRatioAtTick(tickUpper);
-        ( ,uint160 sqrtCurrentPriceX96) = getTickFromPrice(params.currentPrice);
+        uint160 sqrtCurrentPriceX96;
+        (tickCurrent, sqrtCurrentPriceX96) = getTickFromPrice(params.currentPrice);
 
         liquidity = LiquidityMath.getLiquidityForAmounts(
             sqrtCurrentPriceX96,
@@ -1888,4 +1891,35 @@ contract LiquidityCalculation {
     //input : 5500
     //5875717789736564987741329162240 - from Python UniswapV3Book
     //5875717789736564960262128402432 - from ABDK
+
+
+     function divRound(int128 x, int128 y)
+        internal
+        pure
+        returns (int128 result)
+    {
+        int128 quot = ABDKMath64x64.div(x, y);
+        result = quot >> 64;
+
+        // Check if remainder is greater than 0.5
+        if (quot % 2**64 >= 0x8000000000000000) {
+            result += 1;
+        }
+    }
+
+    function nearestUsableTick(int24 tick_, uint24 tickSpacing)
+        public
+        pure
+        returns (int24 result)
+    {
+        result =
+            int24(divRound(int128(tick_), int128(int24(tickSpacing)))) *
+            int24(tickSpacing);
+
+        if (result < TickMath.MIN_TICK) {
+            result += int24(tickSpacing);
+        } else if (result > TickMath.MAX_TICK) {
+            result -= int24(tickSpacing);
+        }
+    }
 }
