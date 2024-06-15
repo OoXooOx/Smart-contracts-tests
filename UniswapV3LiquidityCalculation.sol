@@ -2245,7 +2245,7 @@ contract LiquidityCalculation {
     //sqrtPriceX96 4295558252   tick -887270
   
     uint totalAmt1Share = 49999999999; //  in usdt
-    uint totalAmt0Share = 29664364141986002398516; // 50% from 50k in arb
+    uint totalAmt0Share = 29664364141986002398516; // 50% from 100k in arb
 
     uint cache_amount0 = 18753671816198947248803;
     uint cache_amount1 = 32496078134;  // 19279509899068100045998 in arb      19279509899068100077530
