@@ -392,7 +392,7 @@ library PRBMath {
         uint256 x,
         uint256 y,
         uint256 denominator
-    ) internal pure returns (uint256 result) {
+    ) public pure returns (uint256 result) {
         // 512-bit multiply [prod1 prod0] = x * y. Compute the product mod 2^256 and mod 2^256 - 1, then use
         // use the Chinese Remainder Theorem to reconstruct the 512 bit result. The result is stored in two 256
         // variables such that product = prod1 * 2^256 + prod0.
@@ -736,16 +736,232 @@ library LiquidityMath {
         }
     }
 
-     function addDelta(uint128 x, int128 y) internal pure returns (uint128 z) {
+    function addDelta(uint128 x, int128 y) internal pure returns (uint128 z) {
         if (y < 0) {
-            require((z = x - uint128(-y)) < x, 'LS');
+            require((z = x - uint128(-y)) < x, "LS");
         } else {
-            require((z = x + uint128(y)) >= x, 'LA');
+            require((z = x + uint128(y)) >= x, "LA");
         }
     }
 }
 
+library FullMath {
+    /// @notice Calculates floor(a×b÷denominator) with full precision. Throws if result overflows a uint256 or denominator == 0
+    /// @param a The multiplicand
+    /// @param b The multiplier
+    /// @param denominator The divisor
+    /// @return result The 256-bit result
+    /// @dev Credit to Remco Bloemen under MIT license https://xn--2-umb.com/21/muldiv
+    function mulDiv(
+        uint256 a,
+        uint256 b,
+        uint256 denominator
+    ) internal pure returns (uint256 result) {
+        unchecked {
+            // 512-bit multiply [prod1 prod0] = a * b
+            // Compute the product mod 2**256 and mod 2**256 - 1
+            // then use the Chinese Remainder Theorem to reconstruct
+            // the 512 bit result. The result is stored in two 256
+            // variables such that product = prod1 * 2**256 + prod0
+            uint256 prod0 = a * b; // Least significant 256 bits of the product
+            uint256 prod1; // Most significant 256 bits of the product
+            assembly {
+                let mm := mulmod(a, b, not(0))
+                prod1 := sub(sub(mm, prod0), lt(mm, prod0))
+            }
 
+            // Make sure the result is less than 2**256.
+            // Also prevents denominator == 0
+            require(denominator > prod1);
+
+            // Handle non-overflow cases, 256 by 256 division
+            if (prod1 == 0) {
+                assembly {
+                    result := div(prod0, denominator)
+                }
+                return result;
+            }
+
+            ///////////////////////////////////////////////
+            // 512 by 256 division.
+            ///////////////////////////////////////////////
+
+            // Make division exact by subtracting the remainder from [prod1 prod0]
+            // Compute remainder using mulmod
+            uint256 remainder;
+            assembly {
+                remainder := mulmod(a, b, denominator)
+            }
+            // Subtract 256 bit number from 512 bit number
+            assembly {
+                prod1 := sub(prod1, gt(remainder, prod0))
+                prod0 := sub(prod0, remainder)
+            }
+
+            // Factor powers of two out of denominator
+            // Compute largest power of two divisor of denominator.
+            // Always >= 1.
+            uint256 twos = (0 - denominator) & denominator;
+            // Divide denominator by power of two
+            assembly {
+                denominator := div(denominator, twos)
+            }
+
+            // Divide [prod1 prod0] by the factors of two
+            assembly {
+                prod0 := div(prod0, twos)
+            }
+            // Shift in bits from prod1 into prod0. For this we need
+            // to flip `twos` such that it is 2**256 / twos.
+            // If twos is zero, then it becomes one
+            assembly {
+                twos := add(div(sub(0, twos), twos), 1)
+            }
+            prod0 |= prod1 * twos;
+
+            // Invert denominator mod 2**256
+            // Now that denominator is an odd number, it has an inverse
+            // modulo 2**256 such that denominator * inv = 1 mod 2**256.
+            // Compute the inverse by starting with a seed that is correct
+            // correct for four bits. That is, denominator * inv = 1 mod 2**4
+            uint256 inv = (3 * denominator) ^ 2;
+            // Now use Newton-Raphson iteration to improve the precision.
+            // Thanks to Hensel's lifting lemma, this also works in modular
+            // arithmetic, doubling the correct bits in each step.
+            inv *= 2 - denominator * inv; // inverse mod 2**8
+            inv *= 2 - denominator * inv; // inverse mod 2**16
+            inv *= 2 - denominator * inv; // inverse mod 2**32
+            inv *= 2 - denominator * inv; // inverse mod 2**64
+            inv *= 2 - denominator * inv; // inverse mod 2**128
+            inv *= 2 - denominator * inv; // inverse mod 2**256
+
+            // Because the division is now exact we can divide by multiplying
+            // with the modular inverse of denominator. This will give us the
+            // correct result modulo 2**256. Since the preconditions guarantee
+            // that the outcome is less than 2**256, this is the final result.
+            // We don't need to compute the high bits of the result and prod1
+            // is no longer required.
+            result = prod0 * inv;
+            return result;
+        }
+    }
+
+    /// @notice Calculates ceil(a×b÷denominator) with full precision. Throws if result overflows a uint256 or denominator == 0
+    /// @param a The multiplicand
+    /// @param b The multiplier
+    /// @param denominator The divisor
+    /// @return result The 256-bit result
+    function mulDivRoundingUp(
+        uint256 a,
+        uint256 b,
+        uint256 denominator
+    ) internal pure returns (uint256 result) {
+        unchecked {
+            result = mulDiv(a, b, denominator);
+            if (mulmod(a, b, denominator) > 0) {
+                require(result < type(uint256).max);
+                result++;
+            }
+        }
+    }
+}
+
+library AmountsLiquidity {
+    /// @notice Computes the amount of token0 for a given amount of liquidity and a price range
+    /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary
+    /// @param sqrtRatioBX96 A sqrt price representing the second tick boundary
+    /// @param liquidity The liquidity being valued
+    /// @return amount0 The amount of token0
+    function getAmount0RoundingUpForLiquidity(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint128 liquidity
+    ) internal pure returns (uint256 amount0) {
+        unchecked {
+            if (sqrtRatioAX96 > sqrtRatioBX96)
+                (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+
+            uint256 intermediate = FullMath.mulDiv(
+                sqrtRatioAX96,
+                sqrtRatioBX96,
+                FixedPoint96.Q96
+            );
+
+            return
+                FullMath.mulDivRoundingUp(
+                    liquidity,
+                    sqrtRatioBX96 - sqrtRatioAX96,
+                    intermediate
+                );
+        }
+    }
+
+    /// @notice Computes the amount of token1 for a given amount of liquidity and a price range
+    /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary
+    /// @param sqrtRatioBX96 A sqrt price representing the second tick boundary
+    /// @param liquidity The liquidity being valued
+    /// @return amount1 The amount of token1
+    function getAmount1RoundingUpForLiquidity(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint128 liquidity
+    ) internal pure returns (uint256 amount1) {
+        if (sqrtRatioAX96 > sqrtRatioBX96)
+            (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+
+        unchecked {
+            return
+                FullMath.mulDivRoundingUp(
+                    liquidity,
+                    sqrtRatioBX96 - sqrtRatioAX96,
+                    FixedPoint96.Q96
+                );
+        }
+    }
+
+    /// @notice Computes the token0 and token1 value for a given amount of liquidity, the current
+    /// pool prices and the prices at the tick boundaries
+    /// @param sqrtRatioX96 A sqrt price representing the current pool prices
+    /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary
+    /// @param sqrtRatioBX96 A sqrt price representing the second tick boundary
+    /// @param liquidity The liquidity being valued
+    /// @return amount0 The amount of token0
+    /// @return amount1 The amount of token1
+    function getAmountsRoundingUpForLiquidity(
+        uint160 sqrtRatioX96,
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint128 liquidity
+    ) public pure returns (uint256 amount0, uint256 amount1) {
+        if (sqrtRatioAX96 > sqrtRatioBX96)
+            (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+
+        if (sqrtRatioX96 <= sqrtRatioAX96) {
+            amount0 = getAmount0RoundingUpForLiquidity(
+                sqrtRatioAX96,
+                sqrtRatioBX96,
+                liquidity
+            );
+        } else if (sqrtRatioX96 < sqrtRatioBX96) {
+            amount0 = getAmount0RoundingUpForLiquidity(
+                sqrtRatioX96,
+                sqrtRatioBX96,
+                liquidity
+            );
+            amount1 = getAmount1RoundingUpForLiquidity(
+                sqrtRatioAX96,
+                sqrtRatioX96,
+                liquidity
+            );
+        } else {
+            amount1 = getAmount1RoundingUpForLiquidity(
+                sqrtRatioAX96,
+                sqrtRatioBX96,
+                liquidity
+            );
+        }
+    }
+}
 
 library TickMath {
     /// @dev The minimum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**-128
@@ -1822,12 +2038,13 @@ library ABDKMath64x64 {
 
 contract LiquidityCalculation {
     struct MintParams {
-        uint lowerPrice; 
-        uint upperPrice; 
-        uint256 amount0Desired; 
-        uint256 amount1Desired; 
-        uint currentPrice; 
+        uint256 lowerPrice;
+        uint256 upperPrice;
+        uint256 amount0Desired;
+        uint256 amount1Desired;
+        uint256 currentPrice;
     }
+
     //input:
     //[4545, 5500, 1000000000000000000, 5000000000000000000000, current Price]
     // [4545, 5500, 1000000000000000000, 5000000000000000000000, 5000]
@@ -1843,20 +2060,22 @@ contract LiquidityCalculation {
         external
         pure
         returns (
-            uint128 liquidity, 
-            int24 tickLower, 
+            uint128 liquidity,
+            int24 tickLower,
             int24 tickUpper,
             int24 tickCurrent,
             uint160 sqrtPriceLowerX96,
             uint160 sqrtPriceUpperX96
-            )
+        )
     {
         (tickLower, ) = getTickFromPrice(params.lowerPrice);
         sqrtPriceLowerX96 = TickMath.getSqrtRatioAtTick(tickLower);
         (tickUpper, ) = getTickFromPrice(params.upperPrice);
         sqrtPriceUpperX96 = TickMath.getSqrtRatioAtTick(tickUpper);
         uint160 sqrtCurrentPriceX96;
-        (tickCurrent, sqrtCurrentPriceX96) = getTickFromPrice(params.currentPrice);
+        (tickCurrent, sqrtCurrentPriceX96) = getTickFromPrice(
+            params.currentPrice
+        );
 
         liquidity = LiquidityMath.getLiquidityForAmounts(
             sqrtCurrentPriceX96,
@@ -1867,8 +2086,12 @@ contract LiquidityCalculation {
         );
     }
 
-    function getSqrtRatioAtTick(int24 _tick) public pure returns (uint160 sqrtPriceX96) {
-        sqrtPriceX96=TickMath.getSqrtRatioAtTick(_tick);
+    function getSqrtRatioAtTick(int24 _tick)
+        public
+        pure
+        returns (uint160 sqrtPriceX96)
+    {
+        sqrtPriceX96 = TickMath.getSqrtRatioAtTick(_tick);
     }
 
     function getLiquidityFromTicks(
@@ -1876,20 +2099,19 @@ contract LiquidityCalculation {
         int24 tickUpper,
         int24 tickCurrent,
         uint256 amount0Desired,
-        uint256 amount1Desired)
+        uint256 amount1Desired
+    )
         external
         pure
         returns (
             uint128 liquidity,
             uint160 sqrtPriceLowerX96,
             uint160 sqrtPriceUpperX96
-            )
+        )
     {
         sqrtPriceLowerX96 = TickMath.getSqrtRatioAtTick(tickLower);
         sqrtPriceUpperX96 = TickMath.getSqrtRatioAtTick(tickUpper);
         uint160 sqrtCurrentPriceX96 = getSqrtRatioAtTick(tickCurrent);
-       
-
 
         liquidity = LiquidityMath.getLiquidityForAmounts(
             sqrtCurrentPriceX96,
@@ -1898,23 +2120,31 @@ contract LiquidityCalculation {
             amount0Desired,
             amount1Desired
         );
-
-
-
     }
 
-    function getTickFromSqrtPriceX96(uint160 _SqrtPX96) external pure returns (int24 tick) {
+    function getTickFromSqrtPriceX96(uint160 _SqrtPX96)
+        external
+        pure
+        returns (int24 tick)
+    {
         tick = TickMath.getTickAtSqrtRatio(_SqrtPX96); //4295128740
     }
 
-    function getTickFromPrice(uint256 price) public pure returns (int24 tick_, uint160 SqrtPX96) {
+    function getTickFromPrice(uint256 price)
+        public
+        pure
+        returns (int24 tick_, uint160 SqrtPX96)
+    {
         SqrtPX96 = uint160(
-                int160(
-                    ABDKMath64x64.sqrt(int128(int256(price << 64))) <<
-                        (FixedPoint96.RESOLUTION - 64)
-                )
-            );
+            int160(
+                ABDKMath64x64.sqrt(int128(int256(price << 64))) <<
+                    (FixedPoint96.RESOLUTION - 64)
+            )
+        );
         tick_ = TickMath.getTickAtSqrtRatio(SqrtPX96);
+    }
+    function sum (uint x, uint y ) external pure returns (uint result) {
+        result = x + y;
     }
 
     //input: 5000
@@ -1926,8 +2156,7 @@ contract LiquidityCalculation {
     //5875717789736564987741329162240 - from Python UniswapV3Book
     //5875717789736564960262128402432 - from ABDK
 
-
-     function divRound(int128 x, int128 y)
+    function divRound(int128 x, int128 y)
         internal
         pure
         returns (int128 result)
@@ -1957,7 +2186,98 @@ contract LiquidityCalculation {
         }
     }
 
-   
+    function _getMintedTick(int24 tick, int24 tickSpacing)
+        public
+        pure
+        returns (int24)
+    {
+        int24 compressed = tick / tickSpacing;
+        if (tick < 0 && tick % tickSpacing != 0) compressed--;
+        return compressed * tickSpacing;
+    }
+
+    function _getAmountOut(
+        bool zeroForOne,
+        int24 currentTick,
+        uint256 amountIn
+    ) public pure returns (uint256 swappedOut) {
+        uint160 sqrtPriceX96 = TickMath.getSqrtRatioAtTick(currentTick);
+        if (sqrtPriceX96 <= type(uint128).max) {
+            uint256 ratioX192 = uint256(sqrtPriceX96) * sqrtPriceX96;
+            swappedOut = zeroForOne
+                ? FullMath.mulDiv(ratioX192, amountIn, 1 << 192)
+                : FullMath.mulDiv(1 << 192, amountIn, ratioX192);
+        } else {
+            uint256 ratioX128 = FullMath.mulDiv(
+                sqrtPriceX96,
+                sqrtPriceX96,
+                1 << 64
+            );
+            swappedOut = zeroForOne
+                ? FullMath.mulDiv(ratioX128, amountIn, 1 << 128)
+                : FullMath.mulDiv(1 << 128, amountIn, ratioX128);
+        }
+    }
+
+    function _getAmountOutSqrtPriceX96(
+        bool zeroForOne,
+        uint160 sqrtPriceX96,
+        uint256 amountIn
+    ) public pure returns (uint256 swappedOut) {
+        if (sqrtPriceX96 <= type(uint128).max) {
+            uint256 ratioX192 = uint256(sqrtPriceX96) * sqrtPriceX96;
+            swappedOut = zeroForOne
+                ? FullMath.mulDiv(ratioX192, amountIn, 1 << 192)
+                : FullMath.mulDiv(1 << 192, amountIn, ratioX192);
+        } else {
+            uint256 ratioX128 = FullMath.mulDiv(
+                sqrtPriceX96,
+                sqrtPriceX96,
+                1 << 64
+            );
+            swappedOut = zeroForOne
+                ? FullMath.mulDiv(ratioX128, amountIn, 1 << 128)
+                : FullMath.mulDiv(1 << 128, amountIn, ratioX128);
+        }
+    }
+
     //sqrtPriceX96 4295343490   tick -887271
     //sqrtPriceX96 4295558252   tick -887270
+  
+    uint totalAmt1Share = 49999999999; //  in usdt
+    uint totalAmt0Share = 29664364141986002398516; // 50% from 50k in arb
+
+    uint cache_amount0 = 18753671816198947248803;
+    uint cache_amount1 = 32496078134;  // 19279509899068100045998 in arb      19279509899068100077530
+    int24 currentTick_ = -271103;
+    uint160 currentPrice = 102860318937439985116772;
+
+
+    // uint usdtArbRate =  593287282839720047;
+    // uint arbUsdtRate = 1685524;
+
+    // function usdtToArb(uint amount) public view returns(uint result) {
+    //     result = FullMath.mulDiv(amount,usdtArbRate,1e6);
+    // }
+
+    // function arbTousdt(uint amount) public view returns(uint result) {
+    //     result = FullMath.mulDiv(amount,arbUsdtRate,precision);
+    // }
+
+    function getPrice1e18_OfLiquidityInArb() public view returns(uint amount) { // 
+        amount = cache_amount0 + _getAmountOut(false, currentTick_, cache_amount1); //38033181715267047294801   38033181715267047326333
+    }                             
+
+    function howManyLiqIcanGetForArb() public view returns(uint amount) {
+        amount = FullMath.mulDiv(totalAmt0Share, FixedPoint96.Q96, getPrice1e18_OfLiquidityInArb()); //779960098107656207  779960098107656206634300146855887551
+    } 
+
+    function howManyUsdt() public view returns(uint amount) {
+        amount = FullMath.mulDiv(howManyLiqIcanGetForArb(), cache_amount1, FixedPoint96.Q96); //25345644289     577105696854  577105696843  577105696849
+    }
+
+    function howManyArb() public view returns(uint amount) {
+        amount = FullMath.mulDiv(howManyLiqIcanGetForArb(), cache_amount0, FixedPoint96.Q96); //14627115709641318051869    14627115709493024583166n 14627143111860128615322
+    }
+                                                                                                //14627115709641318051869    
 }
