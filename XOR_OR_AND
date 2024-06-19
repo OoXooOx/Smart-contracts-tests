@@ -16,3 +16,6 @@ AND &
 0,1 returns 0
 1,0 returns 0
 0,0 returns 0
+
+NOT ~
+inverts all the bits of its operand.
