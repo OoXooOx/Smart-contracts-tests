@@ -19,3 +19,9 @@ AND &
 
 NOT ~
 inverts all the bits of its operand.
+Applying the bitwise NOT operator ~x to a number x results in:
+x=−(x+1)
+For x = 5:
+5=−(5+1)=−6 5=−(5+1)=−6
+For x = -5:
+-5=−(−5+1)=4 -5=−(−5+1)=4
